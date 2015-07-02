@@ -1,0 +1,36 @@
+# Avoid version control files.
+\B\.svn\b
+\B\.git\b
+\B\.gitignore\b
+
+# Avoid Makemaker generated and utility files.
+\bblib/
+\bMakeMaker-\d
+\bpm_to_blib\.ts$
+\bpm_to_blib$
+\bblibdirs\.ts$         # 6.18 through 6.25 generated this 
+\bMakefile$
+\bMANIFEST\.bak$
+\bMANIFEST\.SKIP$
+\bMETA_new\.json$
+\bMYMETA\.yml$
+\bMYMETA\.json$
+
+# Avoid temp and backup files.
+\.old$
+\.tmp$
+\.bak$
+\.crt$
+\.key$
+\.pem$
+^tmp
+^test
+^xxx
+^devel
+^backup
+^\.
+\bpoznamky\.txt$
+
+# Avoid our own built files.
+\ACrypt-JWT-
+\ACrypt-KeyWrap-

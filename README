@@ -1,0 +1,391 @@
+NAME
+    Crypt::JWT - JSON Web Token (JWT, JWS, JWE) as defined by RFC7519,
+    RFC7515, RFC7516
+
+SYNOPSIS
+       # encoding
+       use Crypt::JWT qw(encode_jwt);
+       my $jws_token = encode_jwt(payload=>$data, alg=>'HS256', key=>'secret');
+       my $jwe_token = encode_jwt(payload=>$data, alg=>'A192GCMKW', enc=>'A192CBC_HS384', key=>'secret');
+
+       # decoding
+       use Crypt::JWT qw(decode_jwt);
+       my $data1 = decode_jwt(token=>$jws_token, key=>'secret');
+       my $data2 = decode_jwt(token=>$jwe_token, key=>'secret');
+
+DESCRIPTION
+    BEWARE: experimental, unfinished, unstable, work in progress!
+
+    Implements JSON Web Token (JWT) - <https://tools.ietf.org/html/rfc7519>.
+    The implementation covers not only JSON Web Signature (JWS) -
+    <https://tools.ietf.org/html/rfc7515>, but also JSON Web Encryption
+    (JWE) - <https://tools.ietf.org/html/rfc7516>.
+
+    The module implements all (100%) algorithms defined in
+    <https://tools.ietf.org/html/rfc7518> - JSON Web Algorithms (JWA).
+
+EXPORT
+    Nothing is exported by default.
+
+    You can export selected functions:
+
+      use Crypt::JWT qw(decode_jwt encode_jwt);
+
+    Or all of them at once:
+
+      use Crypt::JWT ':all';
+
+FUNCTIONS
+  decode_jwt
+     my $data = decode_jwt(%named_args);
+
+    Named arguments:
+
+    token
+        Mandatory argument, a string with either JWS or JWE JSON Web Token.
+
+         ### JWS token example (3 segments)
+         $t="eyJhbGciOiJIUzI1NiJ9.dGVzdA.ujBihtLSr66CEWqN74SpLUkv28lra_CeHnxLmLNp4Jo";
+
+         ### JWE token example (5 segments)
+         $t="eyJlbmMiOiJBMTI4R0NNIiwiYWxnIjoiQTEyOEtXIn0.UusxEbzhGkORxTRq0xkFKhvzPrXb9smw.VGfOuq0Fxt6TsdqLZUpnxw.JajIQQ.pkKZ7MHS0XjyGmRsqgom6w";
+
+    key A key used for token decryption (JWE) or token signature validation
+        (JWS). The value depends on "alg" token header value.
+
+         JWS alg header      key value
+         ------------------  ----------------------------------
+         none                no key required
+         HS256               string (raw octects) of any length
+         HS384               dtto
+         HS512               dtto
+         RS256               public RSA key, a string with PEM or DER or JSON/JWK key,
+                             perl hash with JWK key, an instance of Crypt::PK::RSA or
+                             Crypt::OpenSSL::RSA or Crypt::X509 or Crypt::OpenSSL::X509
+         RS384               public RSA key, see RS256
+         RS512               public RSA key, see RS256
+         PS256               public RSA key, see RS256
+         PS384               public RSA key, see RS256
+         PS512               public RSA key, see RS256
+         ES256               public ECC key, a string with PEM or DER or JSON/JWK key,
+                             perl hash with JWK key, an instance of Crypt::PK::ECC
+         ES384               public ECC key, see ES256
+         ES512               public ECC key, see ES256
+
+         JWE alg header      key value
+         ------------------  ----------------------------------
+         dir                 string (raw octects), length depends on 'enc' algorithm
+         A128KW              string (raw octects) 16 bytes
+         A192KW              string (raw octects) 24 bytes
+         A256KW              string (raw octects) 32 bytes
+         A128GCMKW           string (raw octects) 16 bytes
+         A192GCMKW           string (raw octects) 24 bytes
+         A256GCMKW           string (raw octects) 32 bytes
+         PBES2-HS256+A128KW  string (raw octects) of any length
+         PBES2-HS384+A192KW  string (raw octects) of any length
+         PBES2-HS512+A256KW  string (raw octects) of any length
+         RSA-OAEP            private RSA key, a string with PEM or DER or JSON/JWK key,
+                             perl hash with JWK key, an instance of Crypt::PK::RSA or
+                             Crypt::OpenSSL::RSA
+         RSA-OAEP-256        private RSA key, see RSA-OAEP
+         RSA1_5              private RSA key, see RSA-OAEP
+         ECDH-ES             private ECC key, a string with PEM or DER or JSON/JWK key,
+                             perl hash with JWK key, an instance of Crypt::PK::ECC
+         ECDH-ES+A128KW      private ECC key, see ECDH-ES
+         ECDH-ES+A192KW      private ECC key, see ECDH-ES
+         ECDH-ES+A256KW      private ECC key, see ECDH-ES
+
+    keypass
+        When 'key' parameter is an encrypted private RSA or ECC key this
+        optional parameter may contain a password for private key
+        decryption.
+
+    allow_none
+        1 - accept JWS tokens with "none" 'alg' header value (which means
+        that token has no signature), BEWARE: DANGEROUS, UNSECURE!!!
+
+        0 (default) - do not allow JWS with "none" 'alg' header value
+
+    ignore_signature
+        1 - do not check signature on JWS tokens, BEWARE: DANGEROUS,
+        UNSECURE!!!
+
+        0 (default) - check signature on JWS tokens
+
+    accepted_alg
+        "undef" (default) means accept all 'alg' algorithms except 'none'
+        (for accepting 'none' use "allow_none")
+
+        "string" name of accepted 'alg' algorithm (only one)
+
+        "ARRAY ref" a list of accepted 'alg' algorithms
+
+        "Regexp" that has to match 'alg' algorithm name
+
+         my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>'HS256');
+         #or
+         my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>['HS256','HS384']);
+         #or
+         my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>qr/^HS(256|384|512)$/);
+
+    accepted_enc
+        "undef" (default) means accept all 'enc' algorithms
+
+        "string" name of accepted 'enc' algorithm (only one)
+
+        "ARRAY ref" a list of accepted 'enc' algorithms
+
+        "Regexp" that has to match 'enc' algorithm name
+
+         my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>'A192GCM');
+         #or
+         my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>['A192GCM','A256GCM']);
+         #or
+         my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>qr/^A(128|192|256)GCM$/);
+
+    decode_payload
+        0 - do not decode payload, return it as a raw string (octects).
+
+        1 - decode payload from JSON string, return it as perl hash ref (or
+        array ref) - decode_json failure means fatal error (croak).
+
+        "undef" (default) - if possible decode payload from JSON string, if
+        decode_json fails return payload as a raw string (octets).
+
+    decode_header
+        0 (default) - do not return decoded header as a return value of
+        decode_jwt()
+
+        1 - return decoded header as a return value of decode_jwt()
+
+         my $payload = decode_jwt(token=>$t, key=>$k);
+         #or
+         my ($header, $payload) = decode_jwt(token=>$t, key=>$k, decode_header=>1);
+
+    verify_iss
+        "CODE ref" - subroutine (with 'iss' claim value passed as argument)
+        should return "true" otherwise verification fails
+
+        "Regexp ref" - 'iss' claim value has to match given regexp otherwise
+        verification fails
+
+        "undef" (default) - do not verify 'iss' claim
+
+    verify_aud
+        "CODE ref" - subroutine (with 'aud' claim value passed as argument)
+        should return "true" otherwise verification fails
+
+        "Regexp ref" - 'aud' claim value has to match given regexp otherwise
+        verification fails
+
+        "undef" (default) - do not verify 'aud' claim
+
+    verify_sub
+        "CODE ref" - subroutine (with 'sub' claim value passed as argument)
+        should return "true" otherwise verification fails
+
+        "Regexp ref" - 'sub' claim value has to match given regexp otherwise
+        verification fails
+
+        "undef" (default) - do not verify 'sub' claim
+
+    verify_jti
+        "CODE ref" - subroutine (with 'jti' claim value passed as argument)
+        should return "true" otherwise verification fails
+
+        "Regexp ref" - 'jti' claim value has to match given regexp otherwise
+        verification fails
+
+        "undef" (default) - do not verify 'jti' claim
+
+    verify_iat
+        0 - ignore 'iat' claim
+
+        1 - require valid 'iat' claim
+
+        "undef" (default) - 'iat' claim must be valid if present
+
+    verify_nbf
+        0 - ignore 'nbf' claim
+
+        1 - require valid 'nbf' claim
+
+        "undef" (default) - 'nbf' claim must be valid if present
+
+    verify_exp
+        0 - ignore 'exp' claim
+
+        1 - require valid 'exp' claim
+
+        "undef" (default) - 'exp' claim must be valid if present
+
+    leeway
+        Tolerance in seconds related to "verify_exp", "verify_nbf",
+        "verify_iat". Default is 0.
+
+  encode_jwt
+     my $token = encode_jwt(%named_args);
+
+    Named arguments:
+
+    payload
+        Value of this mandatory parameter can be a string/buffer or HASH ref
+        or ARRAY ref
+
+         my $token = encode_jwt(payload=>"any raw data", key=>$k, alg=>'HS256');
+         #or
+         my $token = encode_jwt(payload=>{a=>1,b=>2}, key=>$k, alg=>'HS256');
+         #or
+         my $token = encode_jwt(payload=>[11,22,33,44], key=>$k, alg=>'HS256');
+
+        HASH refs and ARRAY refs payloads are serialized as JSON strings
+
+    alg The 'alg' header value is mandatory for both JWE and JWS tokens.
+
+        Supported JWE 'alg' algorithms:
+
+         dir
+         A128KW
+         A192KW
+         A256KW
+         A128GCMKW
+         A192GCMKW
+         A256GCMKW
+         PBES2-HS256+A128KW
+         PBES2-HS384+A192KW
+         PBES2-HS512+A256KW
+         RSA-OAEP
+         RSA-OAEP-256
+         RSA1_5
+         ECDH-ES+A128KW
+         ECDH-ES+A192KW
+         ECDH-ES+A256KW
+         ECDH-ES
+
+        Supported JWS algorithms:
+
+         none   ...  no integrity (NOTE: disabled by default)
+         HS256  ...  HMAC+SHA256 integrity
+         HS384  ...  HMAC+SHA384 integrity
+         HS512  ...  HMAC+SHA512 integrity
+         RS256  ...  RSA+PKCS1-V1_5 + SHA256 signature
+         RS384  ...  RSA+PKCS1-V1_5 + SHA384 signature
+         RS512  ...  RSA+PKCS1-V1_5 + SHA512 signature
+         PS256  ...  RSA+PSS + SHA256 signature
+         PS384  ...  RSA+PSS + SHA384 signature
+         PS512  ...  RSA+PSS + SHA512 signature
+         ES256  ...  ECDSA + SHA256 signature
+         ES384  ...  ECDSA + SHA384 signature
+         ES512  ...  ECDSA + SHA512 signature
+
+    enc The 'enc' header is mandatory for JWE tokens.
+
+        Supported 'enc' algorithms:
+
+         A128GCM
+         A192GCM
+         A256GCM
+         A128CBC-HS256
+         A192CBC-HS384
+         A256CBC-HS512
+
+    key A key used for token encryption (JWE) or token signing (JWS). The
+        value depends on "alg" token header value.
+
+         JWS alg header      key value
+         ------------------  ----------------------------------
+         none                no key required
+         HS256               string (raw octects) of any length
+         HS384               dtto
+         HS512               dtto
+         RS256               private RSA key, a string with PEM or DER or JSON/JWK key,
+                             perl hash with JWK key, an instance of Crypt::PK::RSA or
+                             Crypt::OpenSSL::RSA or Crypt::X509 or Crypt::OpenSSL::X509
+         RS384               private RSA key, see RS256
+         RS512               private RSA key, see RS256
+         PS256               private RSA key, see RS256
+         PS384               private RSA key, see RS256
+         PS512               private RSA key, see RS256
+         ES256               private ECC key, a string with PEM or DER or JSON/JWK key,
+                             perl hash with JWK key, an instance of Crypt::PK::ECC
+         ES384               private ECC key, see ES256
+         ES512               private ECC key, see ES256
+
+         JWE alg header      key value
+         ------------------  ----------------------------------
+         dir                 string (raw octects), length depends on 'enc' algorithm
+         A128KW              string (raw octects) 16 bytes
+         A192KW              string (raw octects) 24 bytes
+         A256KW              string (raw octects) 32 bytes
+         A128GCMKW           string (raw octects) 16 bytes
+         A192GCMKW           string (raw octects) 24 bytes
+         A256GCMKW           string (raw octects) 32 bytes
+         PBES2-HS256+A128KW  string (raw octects) of any length
+         PBES2-HS384+A192KW  string (raw octects) of any length
+         PBES2-HS512+A256KW  string (raw octects) of any length
+         RSA-OAEP            public RSA key, a string with PEM or DER or JSON/JWK key,
+                             perl hash with JWK key, an instance of Crypt::PK::RSA or
+                             Crypt::OpenSSL::RSA
+         RSA-OAEP-256        public RSA key, see RSA-OAEP
+         RSA1_5              public RSA key, see RSA-OAEP
+         ECDH-ES             public ECC key, a string with PEM or DER or JSON/JWK key,
+                             perl hash with JWK key, an instance of Crypt::PK::ECC
+         ECDH-ES+A128KW      public ECC key, see ECDH-ES
+         ECDH-ES+A192KW      public ECC key, see ECDH-ES
+         ECDH-ES+A256KW      public ECC key, see ECDH-ES
+
+    keypass
+        When 'key' parameter is an encrypted private RSA or ECC key this
+        optional parameter may contain a password for private key
+        decryption.
+
+    allow_none
+        1 - allow JWS with "none" 'alg' header value (which means that token
+        has no signature), BEWARE: DANGEROUS, UNSECURE!!!
+
+        0 (default) - do not allow JWS with "none" 'alg' header value
+
+    extra_headers
+        This optional parameter may contain a HASH ref with items that will
+        be added to JWT header.
+
+    zip Compression method, currently 'deflate' is the only one supported.
+        "undef" (default) means no compression.
+
+         my $token = encode_jwt(payload=>$p, key=>$k, alg=>'HS256', zip=>'deflate');
+         #or define compression level
+         my $token = encode_jwt(payload=>$p, key=>$k, alg=>'HS256', zip=>['deflate', 9]);
+
+    auto_iat
+        1 - set 'iat' (Issued At) claim to current time (epoch seconds since
+        1970) at the moment of token encoding
+
+        0 (default) - do not set 'iat' claim
+
+        NOTE: claims are part of the payload and can be used only if the
+        payload is a HASH ref!
+
+    relative_exp
+        Set 'exp' claim (Expiration Time) to current time + "relative_exp"
+        value (in seconds).
+
+        NOTE: claims are part of the payload and can be used only if the
+        payload is a HASH ref!
+
+    relative_nbf
+        Set 'nbf' claim (Not Before) to current time + "relative_exp" value
+        (in seconds).
+
+        NOTE: claims are part of the payload and can be used only if the
+        payload is a HASH ref!
+
+    auto_typ
+        1 - set 'typ' header to value "JWS" for JWS tokens and "JWE" for JWE
+        tokens.
+
+        0 (default) - do not set 'typ' header
+
+SEE ALSO
+    Crypt::Cipher::AES, Crypt::AuthEnc::GCM, Crypt::PK::RSA, Crypt::PK::ECC,
+    Crypt::KeyDerivation, Crypt::KeyWrap
+

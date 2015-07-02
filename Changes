@@ -1,0 +1,8 @@
+Changes for Crypt-JWT distribution
+
+0.006   2015/07/03
+        - after many changes first candidate for stable API
+        - incomplete tests
+
+0.001   2015/06/30
+        - initial version
