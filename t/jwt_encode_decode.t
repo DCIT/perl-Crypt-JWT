@@ -95,12 +95,12 @@ my %jwealg = (
     'A128KW'             => '1234567890123456',                 #128 bits/16 bytes
     'A192KW'             => '123456789012345678901234',         #192 bits/24 bytes
     'A256KW'             => '12345678901234567890123456789012', #256 bits/32 bytes
-    'A128GCMKW'          => '1234567890123456',                 #128 bits/16 bytes 
-    'A192GCMKW'          => '123456789012345678901234',         #192 bits/24 bytes 
-    'A256GCMKW'          => '12345678901234567890123456789012', #256 bits/32 bytes 
-    'PBES2-HS256+A128KW' => 'any length 1', 
-    'PBES2-HS384+A192KW' => 'any length 12', 
-    'PBES2-HS512+A256KW' => 'any length 123', 
+    'A128GCMKW'          => '1234567890123456',                 #128 bits/16 bytes
+    'A192GCMKW'          => '123456789012345678901234',         #192 bits/24 bytes
+    'A256GCMKW'          => '12345678901234567890123456789012', #256 bits/32 bytes
+    'PBES2-HS256+A128KW' => 'any length 1',
+    'PBES2-HS384+A192KW' => 'any length 12',
+    'PBES2-HS512+A256KW' => 'any length 123',
     'RSA-OAEP'           => [Crypt::PK::RSA->new(\$rsaPriv), Crypt::PK::RSA->new(\$rsaPub)],
     'RSA-OAEP-256'       => [Crypt::PK::RSA->new(\$rsaPriv), Crypt::PK::RSA->new(\$rsaPub)],
     'RSA1_5'             => [Crypt::PK::RSA->new(\$rsaPriv), Crypt::PK::RSA->new(\$rsaPub)],
@@ -125,7 +125,7 @@ my %jwsalg = (
 );
 
 for my $alg (sort keys %jwsalg) {
-  my $k = ref $jwsalg{$alg} ? $jwsalg{$alg} : [ $jwsalg{$alg}, $jwsalg{$alg} ]; 
+  my $k = ref $jwsalg{$alg} ? $jwsalg{$alg} : [ $jwsalg{$alg}, $jwsalg{$alg} ];
   my $payload = 'testik';
   my $token = encode_jwt(key=>$k->[0], payload=>$payload, alg=>$alg, allow_none=>1);
   ok($token, "token: alg=>$alg");
@@ -135,7 +135,7 @@ for my $alg (sort keys %jwsalg) {
 
 for my $alg (sort keys %jwealg) {
   for my $enc (@enclist) {
-    my $k = ref $jwealg{$alg} ? $jwealg{$alg} : [ $jwealg{$alg}, $jwealg{$alg} ]; 
+    my $k = ref $jwealg{$alg} ? $jwealg{$alg} : [ $jwealg{$alg}, $jwealg{$alg} ];
     my $payload = 'testik';
     my $token = encode_jwt(key=>$k->[1], payload=>$payload, alg=>$alg, enc=>$enc);
     ok($token, "token: enc=>$enc alg=>$alg");

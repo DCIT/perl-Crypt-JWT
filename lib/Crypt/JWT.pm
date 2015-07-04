@@ -3,7 +3,7 @@ package Crypt::JWT;
 use strict;
 use warnings;
 
-our $VERSION = '0.006';
+our $VERSION = '0.009';
 
 use Exporter 'import';
 our %EXPORT_TAGS = ( all => [qw(decode_jwt encode_jwt)] );
@@ -20,6 +20,7 @@ use Crypt::KeyWrap ':all';
 use Crypt::AuthEnc::GCM qw(gcm_encrypt_authenticate gcm_decrypt_verify);
 use Crypt::Mac::HMAC qw(hmac);
 use Compress::Raw::Zlib;
+use Scalar::Util qw(looks_like_number);
 
 # JWS: https://tools.ietf.org/html/rfc7515
 # JWE: https://tools.ietf.org/html/rfc7516
@@ -59,6 +60,25 @@ sub _prepare_ecc_key {
   return undef;
 }
 
+sub _prepare_oct_key {
+  my $key = shift;
+  if (ref $key eq 'HASH' && $key->{k} && $key->{kty} && $key->{kty} eq 'oct') {
+    $key = decode_base64url($key->{k});
+  }
+  return $key;
+}
+
+sub _kid_lookup {
+  my ($kid, $kid_keys) = @_;
+  $kid_keys = decode_json($kid_keys) unless ref $kid_keys;
+  return undef unless ref $kid_keys eq 'HASH';
+  return undef unless exists $kid_keys->{keys} && ref $kid_keys->{keys} eq 'ARRAY';
+  for (@{$kid_keys->{keys}}) {
+    return $_ if $_->{kid} && $_->{kid} eq $kid;
+  }
+  return undef;
+}
+
 sub _b64u_to_hash {
   my $b64url = shift;
   return undef unless $b64url;
@@ -88,37 +108,41 @@ sub _add_claims {
 sub _verify_claims {
   my ($payload, %args) = @_;
 
+  return if $args{ignore_claims};
+
   my $leeway = $args{leeway} || 0;
   my $now = time;
 
-  ### iat
-  if(defined $payload->{iat}) {
-    if (!defined $args{verify_iat} || $args{verify_iat}==1) {
-      croak "JWT: iat claim check failed" if $payload->{iat} - $leeway < $now;
+  ### exp
+  if(defined $payload->{exp}) {
+    if (!defined $args{verify_exp} || $args{verify_exp}==1) {
+      croak "JWT: exp claim check failed ($payload->{exp}/$leeway vs. $now)" if $payload->{exp} + $leeway < $now;
     }
   }
-  elsif ($args{verify_iat} && $args{verify_iat}==1) {
-    croak "JWT: iat claim required but missing"
+  elsif ($args{verify_exp} && $args{verify_exp}==1) {
+    croak "JWT: exp claim required but missing"
   }
 
   ### nbf
   if(defined $payload->{nbf}) {
     if (!defined $args{verify_nbf} || $args{verify_nbf}==1) {
-      croak "JWT: nbf claim check failed" if $payload->{nbf} - $leeway < $now;
+      croak "JWT: nbf claim check failed ($payload->{nbf}/$leeway vs. $now)" if $payload->{nbf} - $leeway > $now;
     }
   }
   elsif ($args{verify_nbf} && $args{verify_nbf}==1) {
     croak "JWT: nbf claim required but missing"
   }
 
-  ### exp
-  if(defined $payload->{exp}) {
-    if (!defined $args{verify_exp} || $args{verify_exp}==1) {
-      croak "JWT: exp claim check failed" if $payload->{exp} + $leeway > $now;
+  ### iat
+  if (exists $args{verify_iat}) { #default (non existing verify_iat) == no iat check
+    if(defined $payload->{iat}) {
+      if (!defined $args{verify_iat} || $args{verify_iat}==1) {
+        croak "JWT: iat claim check failed ($payload->{iat}/$leeway vs. $now)" if $payload->{iat} - $leeway > $now;
+      }
     }
-  }
-  elsif ($args{verify_exp} && $args{verify_exp}==1) {
-    croak "JWT: exp claim required but missing"
+    elsif ($args{verify_iat} && $args{verify_iat}==1) {
+      croak "JWT: iat claim required but missing"
+    }
   }
 
   ### iss
@@ -222,10 +246,12 @@ sub _payload_dec {
   }
 }
 
-sub _encrypt_cek {
+sub _encrypt_jwe_cek {
   my ($key, $hdr) = @_;
   my $alg = $hdr->{alg};
   my $enc = $hdr->{enc};
+
+  $key = _prepare_oct_key($key); # convert { kty=>"oct", k=>"..." } into raw octects
 
   if ($alg eq 'dir') {
     return ($key, '');
@@ -252,8 +278,9 @@ sub _encrypt_cek {
     return ($cek, $ecek);
   }
   elsif ($alg =~ /^PBES2-HS(512|384|256)\+A(128|192|256)KW$/) {
-    my $salt = random_bytes(16); #XXX
-    my $iter = 5000;             #XXX
+    my $len = looks_like_number($hdr->{p2s}) && $hdr->{p2s} >= 8 && $hdr->{p2s} <= 9999 ? $hdr->{p2s} : 16;
+    my $salt = random_bytes($len);
+    my $iter = looks_like_number($hdr->{p2c}) ? $hdr->{p2c} : 5000;
     $ecek = pbes2_key_wrap($key, $cek, $alg, $salt, $iter);
     $hdr->{p2s} = encode_base64url($salt);
     $hdr->{p2c} = $iter;
@@ -281,6 +308,9 @@ sub _decrypt_jwe_cek {
   my ($ecek, $key, $hdr) = @_;
   my $alg = $hdr->{alg};
   my $enc = $hdr->{enc};
+
+  $key = _prepare_oct_key($key); # convert { kty=>"oct", k=>"..." } into raw octects
+
   if ($alg eq 'dir') {
     return $key;
   }
@@ -370,7 +400,6 @@ sub _decrypt_jwe_payload {
 
 sub _encode_jwe {
   my %args = @_;
-  my $key     = $args{key};
   my $payload = $args{payload};
   my $alg     = $args{alg};
   my $enc     = $args{enc};
@@ -384,9 +413,12 @@ sub _encode_jwe {
   # prepare header
   $header->{alg} = $alg;
   $header->{enc} = $enc;
-  $header->{typ} = 'JWE' if $args{auto_typ};
+  #REMOVED: $header->{typ} = 'JWT' if !exists $header->{typ} && $args{auto_typ};
+  # key
+  croak "JWE: missing 'key'" if !$args{key};
+  my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
   # prepare cek
-  my ($cek, $ecek) = _encrypt_cek($key, $header); # adds some header items
+  my ($cek, $ecek) = _encrypt_jwe_cek($key, $header); # adds some header items
   # encode header
   my $json_header = encode_json($header);
   my $b64u_header = encode_base64url($json_header);
@@ -407,7 +439,12 @@ sub _decode_jwe {
   my $ct     = decode_base64url($b64u_ct);
   my $iv     = decode_base64url($b64u_iv);
   my $tag    = decode_base64url($b64u_tag);
+
   my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
+  if ($header->{kid} && $args{kid_keys}) {
+    my $k = _kid_lookup($header->{kid}, $args{kid_keys});
+    $key = $k if defined $k;
+  }
 
   my $aa = $args{accepted_alg};
   if (ref($aa) eq 'Regexp') {
@@ -427,6 +464,7 @@ sub _decode_jwe {
     croak "JWT: enc '$header->{enc}' not in accepted_enc" if !$acce{$header->{enc}};
   }
 
+  croak "JWE: missing 'key'" if !$key;
   my $cek = _decrypt_jwe_cek($ecek, $key, $header);
   my $payload = _decrypt_jwe_payload($cek, $header->{enc}, $b64u_header, $ct, $iv, $tag);
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
@@ -436,32 +474,33 @@ sub _decode_jwe {
 }
 
 sub _sign_jws {
-  my ($b64u_header, $b64u_payload, $alg, $key, $pass) = @_;
+  my ($b64u_header, $b64u_payload, $alg, $key) = @_;
   return '' if $alg eq 'none'; # no integrity
   my $sig;
   my $data = "$b64u_header.$b64u_payload";
   if ($alg =~ /^HS(256|384|512)$/) { # HMAC integrity
+    $key = _prepare_oct_key($key); # convert { kty=>"oct", k=>"..." } into raw octects
     $sig = hmac("SHA$1", $key, $data);
   }
   elsif ($alg =~ /^RS(256|384|512)/) { # RSA+PKCS1-V1_5 signatures
-    my $pk = _prepare_rsa_key($key, $pass);
+    my $pk = _prepare_rsa_key($key);
     $sig  = $pk->sign_message($data, "SHA$1", 'v1.5');
   }
   elsif ($alg =~ /^PS(256|384|512)/) { # RSA+PSS signatures
     my $hash = "SHA$1";
     my $hashlen = $1/8;
-    my $pk = _prepare_rsa_key($key, $pass);
+    my $pk = _prepare_rsa_key($key);
     $sig  = $pk->sign_message($data, $hash, 'pss', $hashlen);
   }
   elsif ($alg =~ /^ES(256|384|512)/) { # ECDSA signatures
-    my $pk = _prepare_ecc_key($key, $pass);
+    my $pk = _prepare_ecc_key($key);
     $sig  = $pk->sign_message_rfc7518($data, "SHA$1");
   }
   return encode_base64url($sig);
 }
 
 sub _verify_jws {
-  my ($b64u_header, $b64u_payload, $b64u_sig, $alg, $key, $pass) = @_;
+  my ($b64u_header, $b64u_payload, $b64u_sig, $alg, $key) = @_;
   my $sig = decode_base64url($b64u_sig);
   my $data = "$b64u_header.$b64u_payload";
 
@@ -469,6 +508,7 @@ sub _verify_jws {
     return 1;
   }
   elsif ($alg =~ /^HS(256|384|512)$/) { # HMAC integrity
+    $key = _prepare_oct_key($key); # convert { kty=>"oct", k=>"..." } into raw octects
     return 1 if $sig eq hmac("SHA$1", $key, $data);
   }
   elsif ($alg =~ /^RS(256|384|512)/) { # RSA+PKCS1-V1_5 signatures
@@ -492,7 +532,6 @@ sub _verify_jws {
 
 sub _encode_jws {
   my %args = @_;
-  my $key     = $args{key};
   my $payload = $args{payload};
   my $alg     = $args{alg};
   my $header  = $args{extra_headers} ? \%{$args{extra_headers}} : {};
@@ -507,12 +546,15 @@ sub _encode_jws {
   my $b64u_payload = encode_base64url($payload);
   # prepare header
   $header->{alg} = $alg;
-  $header->{typ} = 'JWS' if $args{auto_typ};
+  #REMOVED: $header->{typ} = 'JWT' if !exists $header->{typ} && $args{auto_typ};
   # encode header
   my $json_header = encode_json($header);
   my $b64u_header = encode_base64url($json_header);
+  # key
+  croak "JWS: missing 'key'" if !$args{key} && $alg ne 'none';
+  my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
   # sign header
-  my $b64u_signature = _sign_jws($b64u_header, $b64u_payload, $alg, $args{key}, $args{keypass});
+  my $b64u_signature = _sign_jws($b64u_header, $b64u_payload, $alg, $key);
   return ($b64u_header, $b64u_payload, $b64u_signature);
 }
 
@@ -532,7 +574,14 @@ sub _decode_jws {
     my $alg = $header->{alg};
     croak "JWS: missing header 'alg'" unless $alg;
     croak "JWS: alg 'none' not allowed" if $alg eq 'none' && !$args{allow_none};
-    my $valid = _verify_jws($b64u_header, $b64u_payload, $b64u_sig, $alg, $args{key}, $args{keypass});
+    # key
+    my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
+    if ($header->{kid} && $args{kid_keys}) {
+      my $k = _kid_lookup($header->{kid}, $args{kid_keys});
+      $key = $k if defined $k;
+    }
+    croak "JWS: missing 'key'" if !$key && $alg ne 'none';
+    my $valid = _verify_jws($b64u_header, $b64u_payload, $b64u_sig, $alg, $key);
     croak "JWS: decode failed" if !$valid;
   }
   my $payload = decode_base64url($b64u_payload);
@@ -590,32 +639,6 @@ sub decode_jwt {
 # https://github.com/progrium/ruby-jwt
 # https://github.com/jpadilla/pyjwt/
 
-#### header
-# "alg"       Algorithm
-# "jku"       JWK Set URL
-# "jwk"       JSON Web Key
-# "kid"       Key ID
-# "x5u"       X.509 URL
-# "x5c"       X.509 Certificate Chain
-# "x5t"       X.509 Certificate SHA-1 Thumbprint
-# "x5t#S256"  X.509 Certificate SHA-256 Thumbprint
-# "typ"       Type
-# "cty"       Content Type
-# "crit"      Critical
-#
-# "enc" (Encryption Algorithm) Header Parameter
-# "zip" (Compression Algorithm) Header Parameter
-
-#XXX-TODO more named args:
-
-#### encode:
-# - auto_jwk
-# - keys
-# - serializer  compact|json
-#
-#### decode:
-# - keys
-
 =pod
 
 =head1 NAME
@@ -635,8 +658,6 @@ Crypt::JWT - JSON Web Token (JWT, JWS, JWE) as defined by RFC7519, RFC7515, RFC7
    my $data2 = decode_jwt(token=>$jwe_token, key=>'secret');
 
 =head1 DESCRIPTION
-
-B<BEWARE:> experimental, unfinished, unstable, work in progress!
 
 Implements B<JSON Web Token (JWT)> - L<https://tools.ietf.org/html/rfc7519>.
 The implementation covers not only B<JSON Web Signature (JWS)> - L<https://tools.ietf.org/html/rfc7515>,
@@ -725,6 +746,21 @@ A key used for token decryption (JWE) or token signature validation (JWS). The v
 =item keypass
 
 When 'key' parameter is an encrypted private RSA or ECC key this optional parameter may contain a password for private key decryption.
+
+=item kid_keys
+
+This parametes can be either a JWK Set JSON string (see RFC7517) or a perl HASH ref with JWK Set structure like this:
+
+  my $keylist = {
+    keys => [
+      { kid=>"key1", kty=>"oct", k=>"GawgguFyGrWKav7AX4VKUg" },
+      { kid=>"key2", kty=>"oct", k=>"ulxLGy4XqhbpkR5ObGh1gX" },
+    ]
+  };
+  my $payload = decode_jwt(token=>$t, kid_keys=>$keylist);
+
+When the token header contains 'kid' item the corresponding key is looked up in C<kid_keys> list and used for token
+decoding (you do not need to pass the explicit key via C<key> parameter).
 
 =item allow_none
 
@@ -822,31 +858,37 @@ C<undef> (default) - do not verify 'jti' claim
 
 =item verify_iat
 
-C<0> - ignore 'iat' claim
+C<undef> - Issued At 'iat' claim must be valid (not in the future) if present
+
+C<0> (default) - ignore 'iat' claim
 
 C<1> - require valid 'iat' claim
 
-C<undef> (default) - 'iat' claim must be valid if present
-
 =item verify_nbf
+
+C<undef> (default) - Not Before 'nbf' claim must be valid if present
 
 C<0> - ignore 'nbf' claim
 
 C<1> - require valid 'nbf' claim
 
-C<undef> (default) - 'nbf' claim must be valid if present
-
 =item verify_exp
+
+C<undef> (default) - Expiration Time 'exp' claim must be valid if present
 
 C<0> - ignore 'exp' claim
 
 C<1> - require valid 'exp' claim
 
-C<undef> (default) - 'exp' claim must be valid if present
-
 =item leeway
 
-Tolerance in seconds related to C<verify_exp>, C<verify_nbf>, C<verify_iat>. Default is C<0>.
+Tolerance in seconds related to C<verify_exp>, C<verify_nbf> and C<verify_iat>. Default is C<0>.
+
+=item ignore_claims
+
+C<1> - do not check claims (iat, exp, nbf, iss, aud, sub, jti), B<BEWARE: DANGEROUS, UNSECURE!!!>
+
+C<0> (default) - check claims
 
 =back
 
@@ -983,6 +1025,12 @@ C<0> (default) - do not allow JWS with C<none> 'alg' header value
 
 This optional parameter may contain a HASH ref with items that will be added to JWT header.
 
+If you want to use PBES2-based 'alg' like C<PBES2-HS512+A256KW> you can set PBES2 salt len (p2s) in bytes and
+iteration count (p2c) via C<extra_headers> like this:
+
+ my $token = encode_jwt(payload=>$p, key=>$k, alg=>'PBES2-HS512+A256KW', extra_headers=>{p2c=8000, p2s=>32});
+ #NOTE: handling of p2s header is a special case, in the end it is replaced with the generated salt
+
 =item zip
 
 Compression method, currently 'deflate' is the only one supported. C<undef> (default) means no compression.
@@ -1007,22 +1055,12 @@ NOTE: claims are part of the payload and can be used only if the payload is a HA
 
 =item relative_nbf
 
-Set 'nbf' claim (Not Before) to current time + C<relative_exp> value (in seconds).
+Set 'nbf' claim (Not Before) to current time + C<relative_nbf> value (in seconds).
 
 NOTE: claims are part of the payload and can be used only if the payload is a HASH ref!
-
-=item auto_typ
-
-C<1> - set 'typ' header to value C<JWS> for JWS tokens and C<JWE> for JWE tokens.
-
-C<0> (default) - do not set 'typ' header
 
 =back
 
 =head1 SEE ALSO
 
 L<Crypt::Cipher::AES>, L<Crypt::AuthEnc::GCM>, L<Crypt::PK::RSA>, L<Crypt::PK::ECC>, L<Crypt::KeyDerivation>, L<Crypt::KeyWrap>
-
-
-
-

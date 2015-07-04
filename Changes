@@ -1,5 +1,17 @@
 Changes for Crypt-JWT distribution
 
+0.009   2015/08/04
+        - decode_jwt: verify_iat default changed to 0
+        - encode_jwt: auto_typ removed
+        - improved tests
+
+0.008   2015/07/04
+        - decode_jwt: new parameter - ignore_claims
+        - fix related to nbf, iat, exp checks
+
+0.007   2015/07/04
+        - decode_jwt: new parameter - kid_keys
+
 0.006   2015/07/03
         - after many changes first candidate for stable API
         - incomplete tests

@@ -14,8 +14,6 @@ SYNOPSIS
        my $data2 = decode_jwt(token=>$jwe_token, key=>'secret');
 
 DESCRIPTION
-    BEWARE: experimental, unfinished, unstable, work in progress!
-
     Implements JSON Web Token (JWT) - <https://tools.ietf.org/html/rfc7519>.
     The implementation covers not only JSON Web Signature (JWS) -
     <https://tools.ietf.org/html/rfc7515>, but also JSON Web Encryption
@@ -99,6 +97,22 @@ FUNCTIONS
         When 'key' parameter is an encrypted private RSA or ECC key this
         optional parameter may contain a password for private key
         decryption.
+
+    kid_keys
+        This parametes can be either a JWK Set JSON string (see RFC7517) or
+        a perl HASH ref with JWK Set structure like this:
+
+          my $keylist = {
+            keys => [
+              { kid=>"key1", kty=>"oct", k=>"GawgguFyGrWKav7AX4VKUg" },
+              { kid=>"key2", kty=>"oct", k=>"ulxLGy4XqhbpkR5ObGh1gX" },
+            ]
+          };
+          my $payload = decode_jwt(token=>$t, kid_keys=>$keylist);
+
+        When the token header contains 'kid' item the corresponding key is
+        looked up in "kid_keys" list and used for token decoding (you do not
+        need to pass the explicit key via "key" parameter).
 
     allow_none
         1 - accept JWS tokens with "none" 'alg' header value (which means
@@ -199,29 +213,37 @@ FUNCTIONS
         "undef" (default) - do not verify 'jti' claim
 
     verify_iat
-        0 - ignore 'iat' claim
+        "undef" - Issued At 'iat' claim must be valid (not in the future) if
+        present
+
+        0 (default) - ignore 'iat' claim
 
         1 - require valid 'iat' claim
 
-        "undef" (default) - 'iat' claim must be valid if present
-
     verify_nbf
+        "undef" (default) - Not Before 'nbf' claim must be valid if present
+
         0 - ignore 'nbf' claim
 
         1 - require valid 'nbf' claim
 
-        "undef" (default) - 'nbf' claim must be valid if present
-
     verify_exp
+        "undef" (default) - Expiration Time 'exp' claim must be valid if
+        present
+
         0 - ignore 'exp' claim
 
         1 - require valid 'exp' claim
 
-        "undef" (default) - 'exp' claim must be valid if present
-
     leeway
-        Tolerance in seconds related to "verify_exp", "verify_nbf",
+        Tolerance in seconds related to "verify_exp", "verify_nbf" and
         "verify_iat". Default is 0.
+
+    ignore_claims
+        1 - do not check claims (iat, exp, nbf, iss, aud, sub, jti), BEWARE:
+        DANGEROUS, UNSECURE!!!
+
+        0 (default) - check claims
 
   encode_jwt
      my $token = encode_jwt(%named_args);
@@ -349,6 +371,13 @@ FUNCTIONS
         This optional parameter may contain a HASH ref with items that will
         be added to JWT header.
 
+        If you want to use PBES2-based 'alg' like "PBES2-HS512+A256KW" you
+        can set PBES2 salt len (p2s) in bytes and iteration count (p2c) via
+        "extra_headers" like this:
+
+         my $token = encode_jwt(payload=>$p, key=>$k, alg=>'PBES2-HS512+A256KW', extra_headers=>{p2c=8000, p2s=>32});
+         #NOTE: handling of p2s header is a special case, in the end it is replaced with the generated salt
+
     zip Compression method, currently 'deflate' is the only one supported.
         "undef" (default) means no compression.
 
@@ -373,17 +402,11 @@ FUNCTIONS
         payload is a HASH ref!
 
     relative_nbf
-        Set 'nbf' claim (Not Before) to current time + "relative_exp" value
+        Set 'nbf' claim (Not Before) to current time + "relative_nbf" value
         (in seconds).
 
         NOTE: claims are part of the payload and can be used only if the
         payload is a HASH ref!
-
-    auto_typ
-        1 - set 'typ' header to value "JWS" for JWS tokens and "JWE" for JWE
-        tokens.
-
-        0 (default) - do not set 'typ' header
 
 SEE ALSO
     Crypt::Cipher::AES, Crypt::AuthEnc::GCM, Crypt::PK::RSA, Crypt::PK::ECC,
