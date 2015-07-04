@@ -593,3 +593,11 @@ Value C<$cek> - binary octets.
 =head1 SEE ALSO
 
 L<Crypt::Cipher::AES>, L<Crypt::AuthEnc::GCM>, L<Crypt::PK::RSA>, L<Crypt::KeyDerivation>
+
+=head1 LICENSE
+
+This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+=head1 COPYRIGHT
+
+Copyright (c) 2015 DCIT, a.s. L<http://www.dcit.cz> / Karel Miko

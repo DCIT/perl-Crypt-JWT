@@ -650,7 +650,7 @@ Crypt::JWT - JSON Web Token (JWT, JWS, JWE) as defined by RFC7519, RFC7515, RFC7
    # encoding
    use Crypt::JWT qw(encode_jwt);
    my $jws_token = encode_jwt(payload=>$data, alg=>'HS256', key=>'secret');
-   my $jwe_token = encode_jwt(payload=>$data, alg=>'A192GCMKW', enc=>'A192CBC_HS384', key=>'secret');
+   my $jwe_token = encode_jwt(payload=>$data, alg=>'PBES2-HS256+A128KW', enc=>'A128GCM', key=>'secret');
 
    # decoding
    use Crypt::JWT qw(decode_jwt);
@@ -1064,3 +1064,11 @@ NOTE: claims are part of the payload and can be used only if the payload is a HA
 =head1 SEE ALSO
 
 L<Crypt::Cipher::AES>, L<Crypt::AuthEnc::GCM>, L<Crypt::PK::RSA>, L<Crypt::PK::ECC>, L<Crypt::KeyDerivation>, L<Crypt::KeyWrap>
+
+=head1 LICENSE
+
+This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+=head1 COPYRIGHT
+
+Copyright (c) 2015 DCIT, a.s. L<http://www.dcit.cz> / Karel Miko
