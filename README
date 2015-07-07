@@ -6,7 +6,7 @@ SYNOPSIS
        # encoding
        use Crypt::JWT qw(encode_jwt);
        my $jws_token = encode_jwt(payload=>$data, alg=>'HS256', key=>'secret');
-       my $jwe_token = encode_jwt(payload=>$data, alg=>'A192GCMKW', enc=>'A192CBC_HS384', key=>'secret');
+       my $jwe_token = encode_jwt(payload=>$data, alg=>'PBES2-HS256+A128KW', enc=>'A128GCM', key=>'secret');
 
        # decoding
        use Crypt::JWT qw(decode_jwt);
@@ -43,10 +43,12 @@ FUNCTIONS
         Mandatory argument, a string with either JWS or JWE JSON Web Token.
 
          ### JWS token example (3 segments)
-         $t="eyJhbGciOiJIUzI1NiJ9.dGVzdA.ujBihtLSr66CEWqN74SpLUkv28lra_CeHnxLmLNp4Jo";
+         $t = "eyJhbGciOiJIUzI1NiJ9.dGVzdA.ujBihtLSr66CEWqN74SpLUkv28lra_CeHnxLmLNp4Jo";
+         my $data = decode_jwt(token=>$t, key=>$k);
 
          ### JWE token example (5 segments)
-         $t="eyJlbmMiOiJBMTI4R0NNIiwiYWxnIjoiQTEyOEtXIn0.UusxEbzhGkORxTRq0xkFKhvzPrXb9smw.VGfOuq0Fxt6TsdqLZUpnxw.JajIQQ.pkKZ7MHS0XjyGmRsqgom6w";
+         $t = "eyJlbmMiOiJBMTI4R0NNIiwiYWxnIjoiQTEyOEtXIn0.UusxEbzhGkORxTRq0xkFKhvzPrXb9smw.VGfOuq0Fxt6TsdqLZUpnxw.JajIQQ.pkKZ7MHS0XjyGmRsqgom6w";
+         my $data = decode_jwt(token=>$t, key=>$k);
 
     key A key used for token decryption (JWE) or token signature validation
         (JWS). The value depends on "alg" token header value.
@@ -54,44 +56,133 @@ FUNCTIONS
          JWS alg header      key value
          ------------------  ----------------------------------
          none                no key required
-         HS256               string (raw octects) of any length
+         HS256               string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
          HS384               dtto
          HS512               dtto
-         RS256               public RSA key, a string with PEM or DER or JSON/JWK key,
-                             perl hash with JWK key, an instance of Crypt::PK::RSA or
-                             Crypt::OpenSSL::RSA or Crypt::X509 or Crypt::OpenSSL::X509
+         RS256               public RSA key, perl HASH ref with JWK key structure,
+                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
+                             object: Crypt::PK::RSA, Crypt::OpenSSL::RSA, Crypt::X509 or Crypt::OpenSSL::X509
          RS384               public RSA key, see RS256
          RS512               public RSA key, see RS256
          PS256               public RSA key, see RS256
          PS384               public RSA key, see RS256
          PS512               public RSA key, see RS256
-         ES256               public ECC key, a string with PEM or DER or JSON/JWK key,
-                             perl hash with JWK key, an instance of Crypt::PK::ECC
+         ES256               public ECC key, perl HASH ref with JWK key structure, 
+                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
+                             an instance of Crypt::PK::ECC
          ES384               public ECC key, see ES256
          ES512               public ECC key, see ES256
 
          JWE alg header      key value
          ------------------  ----------------------------------
-         dir                 string (raw octects), length depends on 'enc' algorithm
-         A128KW              string (raw octects) 16 bytes
-         A192KW              string (raw octects) 24 bytes
-         A256KW              string (raw octects) 32 bytes
-         A128GCMKW           string (raw octects) 16 bytes
-         A192GCMKW           string (raw octects) 24 bytes
-         A256GCMKW           string (raw octects) 32 bytes
-         PBES2-HS256+A128KW  string (raw octects) of any length
-         PBES2-HS384+A192KW  string (raw octects) of any length
-         PBES2-HS512+A256KW  string (raw octects) of any length
-         RSA-OAEP            private RSA key, a string with PEM or DER or JSON/JWK key,
-                             perl hash with JWK key, an instance of Crypt::PK::RSA or
-                             Crypt::OpenSSL::RSA
+         dir                 string (raw octects) or perl HASH ref with JWK, kty=>'oct', length depends on 'enc' algorithm
+         A128KW              string (raw octects) 16 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A192KW              string (raw octects) 24 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A256KW              string (raw octects) 32 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A128GCMKW           string (raw octects) 16 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A192GCMKW           string (raw octects) 24 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A256GCMKW           string (raw octects) 32 bytes (or perl HASH ref with JWK, kty=>'oct')
+         PBES2-HS256+A128KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
+         PBES2-HS384+A192KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
+         PBES2-HS512+A256KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
+         RSA-OAEP            private RSA key, perl HASH ref with JWK key structure,
+                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
+                             an instance of Crypt::PK::RSA or Crypt::OpenSSL::RSA
          RSA-OAEP-256        private RSA key, see RSA-OAEP
          RSA1_5              private RSA key, see RSA-OAEP
-         ECDH-ES             private ECC key, a string with PEM or DER or JSON/JWK key,
-                             perl hash with JWK key, an instance of Crypt::PK::ECC
+         ECDH-ES             private ECC key, perl HASH ref with JWK key structure,
+                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
+                             an instance of Crypt::PK::ECC
          ECDH-ES+A128KW      private ECC key, see ECDH-ES
          ECDH-ES+A192KW      private ECC key, see ECDH-ES
          ECDH-ES+A256KW      private ECC key, see ECDH-ES
+
+        Examples with raw octect keys:
+
+         #string
+         my $data = decode_jwt(token=>$t, key=>'secretkey');
+         #binary key
+         my $data = decode_jwt(token=>$t, key=>pack("H*", "788A6E38F36B7596EF6A669E94"));
+         #pel HASH ref with JWK structure (key type 'oct')
+         my $data = decode_jwt(token=>$t, key=>{kty=>'oct', k=>"GawgguFyGrWKav7AX4VKUg"});
+
+        Examples with RSA keys:
+
+         my $pem_key_string = <<'EOF';
+         -----BEGIN PRIVATE KEY-----
+         MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCoVm/Sl5r+Ofky
+         jioRSZK26GW6WyjyfWKddsSi13/NOtCn0rRErSF/u3QrgGMpWFqKohqbi1VVC+SZ
+         ...
+         8c1vm2YFafgdkSk9Qd1oU2Fv1aOQy4VovOFzJ3CcR+2r7cbRfcpLGnintHtp9yek
+         02p+d5g4OChfFNDhDtnIqjvY
+         -----END PRIVATE KEY-----
+         EOF
+ 
+         my $jwk_key_json_string = '{"kty":"RSA","n":"0vx7agoebG...L6tSoc_BJECP","e":"AQAB"}';
+ 
+         #a reference to SCALAR string with PEM or DER or JSON/JWK data,
+         my $data = decode_jwt(token=>$t, key=>\$pem_key_string);
+         my $data = decode_jwt(token=>$t, key=>\$der_key_string);
+         my $data = decode_jwt(token=>$t, key=>\$jwk_key_json_string);
+
+         #instance of Crypt::PK::RSA
+         my $data = decode_jwt(token=>$t, key=>Crypt::PK::RSA->new('keyfile.pem'));
+         my $data = decode_jwt(token=>$t, key=>Crypt::PK::RSA->new(\$pem_key_string));
+
+         #instance of Crypt::OpenSSL::RSA
+         my $data = decode_jwt(token=>$t, key=>Crypt::OpenSSL::RSA->new_private_key($pem_key_string));
+
+         #instance of Crypt::X509 (public key only)
+         my $data = decode_jwt(token=>$t, key=>Crypt::X509->new(cert=>$cert));
+
+         #instance of Crypt::OpenSSL::X509 (public key only)
+         my $data = decode_jwt(token=>$t, key=>Crypt::OpenSSL::X509->new_from_file('cert.pem'));
+         my $data = decode_jwt(token=>$t, key=>Crypt::OpenSSL::X509->new_from_string($cert));
+
+         #pel HASH ref with JWK structure (key type 'RSA')
+         my $rsa_priv = {
+           kty => "RSA",
+           n   => "0vx7agoebGcQSuuPiLJXZpt...eZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",
+           e   => "AQAB",
+           d   => "X4cTteJY_gn4FYPsXB8rdXi...FLN5EEaG6RoVH-HLKD9Mdx5ooGURknhnrRwUkC7h5fJLMWbFAKLWY2v7B6NqSzUvx0_YSf",
+           p   => "83i-7IvMGXoMXCskv73TKr8...Z27zvoj6pbUQyLPBQxtPnwD20-60eTmD2ujMt5PoMrm8RmNhVWtjjMmMjOpSicFHjXOuVI",
+           q   => "3dfOR9cuYq-0S-mkFLzgItg...q3hWeMuG0ouqnb3obLyuqjVZQ1dIrdgTnCdYzBcOW5r37AFXjift_NGiovonzhKpoVVS78",
+           dp  => "G4sPXkc6Ya9y8oJW9_ILj4...zi_H7TkS8x5SdX3oE0oiYwxIiemTAu0UOa5pgFGyJ4c8t2VF40XRugKTP8akhFo5tA77Qe",
+           dq  => "s9lAH9fggBsoFR8Oac2R_E...T2kGOhvIllTE1efA6huUvMfBcpn8lqW6vzzYY5SSF7pMd_agI3G8IbpBUb0JiraRNUfLhc",
+           qi  => "GyM_p6JrXySiz1toFgKbWV...4ypu9bMWx3QJBfm0FoYzUIZEVEcOqwmRN81oDAaaBk0KWGDjJHDdDmFW3AN7I-pux_mHZG",
+         };
+         my $data = decode_jwt(token=>$t, key=>$rsa_priv});
+
+        Examples with ECC keys:
+
+         my $pem_key_string = <<'EOF';
+         -----BEGIN EC PRIVATE KEY-----
+         MHcCAQEEIBG1c3z52T8XwMsahGVdOZWgKCQJfv+l7djuJjgetdbDoAoGCCqGSM49
+         AwEHoUQDQgAEoBUyo8CQAFPeYPvv78ylh5MwFZjTCLQeb042TjiMJxG+9DLFmRSM
+         lBQ9T/RsLLc+PmpB1+7yPAR+oR5gZn3kJQ==
+         -----END EC PRIVATE KEY-----
+         EOF
+ 
+         my $jwk_key_json_string = '{"kty":"EC","crv":"P-256","x":"MKB..7D4","y":"4Et..FyM"}';
+ 
+         #a reference to SCALAR string with PEM or DER or JSON/JWK data,
+         my $data = decode_jwt(token=>$t, key=>\$pem_key_string);
+         my $data = decode_jwt(token=>$t, key=>\$der_key_string);
+         my $data = decode_jwt(token=>$t, key=>\$jwk_key_json_string);
+
+         #instance of Crypt::PK::ECC
+         my $data = decode_jwt(token=>$t, key=>Crypt::PK::ECC->new('keyfile.pem'));
+         my $data = decode_jwt(token=>$t, key=>Crypt::PK::ECC->new(\$pem_key_string));
+
+         #pel HASH ref with JWK structure (key type 'RSA')
+         my $ecc_priv = {
+           kty => "EC",
+           crv => "P-256",
+           x   => "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+           y   => "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
+           d   => "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",
+         };
+         my $data = decode_jwt(token=>$t, key=>$ecc_priv});
 
     keypass
         When 'key' parameter is an encrypted private RSA or ECC key this
@@ -317,41 +408,43 @@ FUNCTIONS
          JWS alg header      key value
          ------------------  ----------------------------------
          none                no key required
-         HS256               string (raw octects) of any length
+         HS256               string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
          HS384               dtto
          HS512               dtto
-         RS256               private RSA key, a string with PEM or DER or JSON/JWK key,
-                             perl hash with JWK key, an instance of Crypt::PK::RSA or
-                             Crypt::OpenSSL::RSA or Crypt::X509 or Crypt::OpenSSL::X509
+         RS256               private RSA key, perl HASH ref with JWK key structure, 
+                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
+                             object: Crypt::PK::RSA, Crypt::OpenSSL::RSA, Crypt::X509 or Crypt::OpenSSL::X509
          RS384               private RSA key, see RS256
          RS512               private RSA key, see RS256
          PS256               private RSA key, see RS256
          PS384               private RSA key, see RS256
          PS512               private RSA key, see RS256
-         ES256               private ECC key, a string with PEM or DER or JSON/JWK key,
-                             perl hash with JWK key, an instance of Crypt::PK::ECC
+         ES256               private ECC key, perl HASH ref with JWK key structure, 
+                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
+                             an instance of Crypt::PK::ECC
          ES384               private ECC key, see ES256
          ES512               private ECC key, see ES256
 
          JWE alg header      key value
          ------------------  ----------------------------------
-         dir                 string (raw octects), length depends on 'enc' algorithm
-         A128KW              string (raw octects) 16 bytes
-         A192KW              string (raw octects) 24 bytes
-         A256KW              string (raw octects) 32 bytes
-         A128GCMKW           string (raw octects) 16 bytes
-         A192GCMKW           string (raw octects) 24 bytes
-         A256GCMKW           string (raw octects) 32 bytes
-         PBES2-HS256+A128KW  string (raw octects) of any length
-         PBES2-HS384+A192KW  string (raw octects) of any length
-         PBES2-HS512+A256KW  string (raw octects) of any length
-         RSA-OAEP            public RSA key, a string with PEM or DER or JSON/JWK key,
-                             perl hash with JWK key, an instance of Crypt::PK::RSA or
-                             Crypt::OpenSSL::RSA
+         dir                 string (raw octects) or perl HASH ref with JWK, kty=>'oct', length depends on 'enc' algorithm
+         A128KW              string (raw octects) 16 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A192KW              string (raw octects) 24 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A256KW              string (raw octects) 32 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A128GCMKW           string (raw octects) 16 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A192GCMKW           string (raw octects) 24 bytes (or perl HASH ref with JWK, kty=>'oct')
+         A256GCMKW           string (raw octects) 32 bytes (or perl HASH ref with JWK, kty=>'oct')
+         PBES2-HS256+A128KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
+         PBES2-HS384+A192KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
+         PBES2-HS512+A256KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
+         RSA-OAEP            public RSA key, perl HASH ref with JWK key structure, 
+                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
+                             an instance of Crypt::PK::RSA or Crypt::OpenSSL::RSA
          RSA-OAEP-256        public RSA key, see RSA-OAEP
          RSA1_5              public RSA key, see RSA-OAEP
-         ECDH-ES             public ECC key, a string with PEM or DER or JSON/JWK key,
-                             perl hash with JWK key, an instance of Crypt::PK::ECC
+         ECDH-ES             public ECC key, perl HASH ref with JWK key structure, 
+                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
+                             an instance of Crypt::PK::ECC
          ECDH-ES+A128KW      public ECC key, see ECDH-ES
          ECDH-ES+A192KW      public ECC key, see ECDH-ES
          ECDH-ES+A256KW      public ECC key, see ECDH-ES
@@ -411,4 +504,11 @@ FUNCTIONS
 SEE ALSO
     Crypt::Cipher::AES, Crypt::AuthEnc::GCM, Crypt::PK::RSA, Crypt::PK::ECC,
     Crypt::KeyDerivation, Crypt::KeyWrap
+
+LICENSE
+    This program is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+
+COPYRIGHT
+    Copyright (c) 2015 DCIT, a.s. <http://www.dcit.cz> / Karel Miko
 

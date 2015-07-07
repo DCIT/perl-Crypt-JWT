@@ -1,5 +1,11 @@
 Changes for Crypt-JWT distribution
 
+0.010   2015/07/07
+        - INCOMPATIBLE CHANGE: 'key' param of decode_jwt and encode_jwt:
+          PEM/DER/JWK-JSON key strings are not passed as scalars but
+          as a reference to scalar (see examples in documentation)
+        - decode_jwt: kid_keys now strictly checks kty (key type)
+
 0.009   2015/08/04
         - decode_jwt: verify_iat default changed to 0
         - encode_jwt: auto_typ removed
