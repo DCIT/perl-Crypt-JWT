@@ -12,7 +12,7 @@ our @EXPORT = qw();
 
 use Carp;
 use MIME::Base64 qw(decode_base64url encode_base64url);
-use JSON qw(decode_json encode_json);
+use JSON::MaybeXS qw(decode_json encode_json);
 use Crypt::PK::RSA;
 use Crypt::PK::ECC;
 use Crypt::PRNG qw(random_bytes);
