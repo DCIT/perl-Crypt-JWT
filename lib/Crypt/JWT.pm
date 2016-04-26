@@ -569,8 +569,9 @@ sub _encode_jws {
 }
 
 sub _decode_jws {
-  my ($b64u_header, $b64u_payload, $b64u_sig, %args) = @_;
+  my ($b64u_header, $b64u_payload, $b64u_sig, $unprotected_header, %args) = @_;
   my $header = _b64u_to_hash($b64u_header);
+  $unprotected_header = {} if ref $unprotected_header ne 'HASH';
 
   if (!$args{ignore_signature}) {
     my $aa = $args{accepted_alg};
@@ -586,8 +587,9 @@ sub _decode_jws {
     croak "JWS: alg 'none' not allowed" if $alg eq 'none' && !$args{allow_none};
     # key
     my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
-    if ($header->{kid} && $args{kid_keys}) {
-      my $k = _kid_lookup($header->{kid}, $args{kid_keys}, $alg);
+    my $kid = exists $header->{kid} ? $header->{kid} : $unprotected_header->{kid};
+    if (!defined $key && defined $kid && $args{kid_keys}) {
+      my $k = _kid_lookup($kid, $args{kid_keys}, $alg);
       $key = $k if defined $k;
     }
     croak "JWS: missing 'key'" if !$key && $alg ne 'none';
@@ -598,6 +600,7 @@ sub _decode_jws {
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
   $payload = _payload_dec($payload, $args{decode_payload});
   _verify_claims($payload, %args) if ref $payload eq 'HASH'; # croaks on error
+  $header = { %$unprotected_header, %$header }; # merge headers
   return ($header, $payload);
 }
 
@@ -641,15 +644,13 @@ sub decode_jwt {
   }
   elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]*)$/) {
     # JWS token (3 segments)
-    ($header, $payload) = _decode_jws($1, $2, $3, %args);
+    ($header, $payload) = _decode_jws($1, $2, $3, {}, %args);
   }
   elsif ($args{token} =~ /^\s*\{.*?\}\s*$/s) {
     my $hash = decode_json($args{token});
     if ($hash->{payload} && $hash->{protected}) {
       # Flattened JWS JSON Serialization
-      ($header, $payload) = _decode_jws($hash->{protected}, $hash->{payload}, $hash->{signature}, %args);
-      # merge protected (=$header) and unprotected (=$hash->{header}) headers
-      $header = { %{$hash->{header}}, %$header } if ref $hash->{header} eq 'HASH';
+      ($header, $payload) = _decode_jws($hash->{protected}, $hash->{payload}, $hash->{signature}, $hash->{header}, %args);
     }
     else {
       croak "JWT: unsupported JWS/JWT JSON Serialization";
