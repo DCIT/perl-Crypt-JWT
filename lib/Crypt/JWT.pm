@@ -607,7 +607,19 @@ sub encode_jwt {
   if ($args{alg} =~ /^(none|((HS|RS|PS|ES)(512|384|256)))$/) {
     ###JWS
     my ($b64u_header, $b64u_payload, $b64u_signature) = _encode_jws(%args);
-    return "$b64u_header.$b64u_payload.$b64u_signature";
+    my $ser = $args{serialization} // 'compact';
+    if ($ser eq 'compact') { # https://tools.ietf.org/html/rfc7515#section-7.1
+      croak "JWT: cannot use 'unprotected_headers' with compact serialization" if ref $args{unprotected_headers} eq 'HASH';
+      return "$b64u_header.$b64u_payload.$b64u_signature";
+    }
+    elsif ($ser eq 'flattened') { # https://tools.ietf.org/html/rfc7515#section-7.2.2
+      my $token = { protected => $b64u_header, payload => $b64u_payload, signature => $b64u_signature };
+      $token->{header} = \%{$args{unprotected_headers}} if ref $args{unprotected_headers} eq 'HASH';
+      return encode_json($token);
+    }
+    else {
+      croak "JWS: unsupported JWS serialization '$ser'";
+    }
   }
   else {
     ### JWE
@@ -630,6 +642,18 @@ sub decode_jwt {
   elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]*)$/) {
     # JWS token (3 segments)
     ($header, $payload) = _decode_jws($1, $2, $3, %args);
+  }
+  elsif ($args{token} =~ /^\s*\{.*?\}\s*$/s) {
+    my $hash = decode_json($args{token});
+    if ($hash->{payload} && $hash->{protected}) {
+      # Flattened JWS JSON Serialization
+      ($header, $payload) = _decode_jws($hash->{protected}, $hash->{payload}, $hash->{signature}, %args);
+      # merge protected (=$header) and unprotected (=$hash->{header}) headers
+      $header = { %{$hash->{header}}, %$header } if ref $hash->{header} eq 'HASH';
+    }
+    else {
+      croak "JWT: unsupported JWS/JWT JSON Serialization";
+    }
   }
   else {
     croak "JWT: invalid token format";
