@@ -592,6 +592,8 @@ sub _decode_jws {
       my $k = _kid_lookup($kid, $args{kid_keys}, $alg);
       $key = $k if defined $k;
     }
+    # if no key given, try to use 'jwk' value from header
+    $key = $header->{jwk} if !$key && $header->{jwk};
     croak "JWS: missing 'key'" if !$key && $alg ne 'none';
     my $valid = _verify_jws($b64u_header, $b64u_payload, $b64u_sig, $alg, $key);
     croak "JWS: decode failed" if !$valid;
