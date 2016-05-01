@@ -349,14 +349,15 @@ sub _decrypt_jwe_cek {
 }
 
 sub _encrypt_jwe_payload {
-  my ($cek, $enc, $encoded_header, $payload) = @_;
+  my ($cek, $enc, $b64u_header, $b64u_aad, $payload) = @_;
+  my $aad = defined $b64u_aad ? "$b64u_header.$b64u_aad" : $b64u_header;
   if ($enc =~ /^A(128|192|256)GCM$/) {
     # https://tools.ietf.org/html/rfc7518#section-5.3
     my $len1 = $1/8;
     my $len2 = length($cek);
     croak "JWE: wrong AES key length ($len1 vs. $len2) for $enc" unless $len1 == $len2;
     my $iv = random_bytes(16); # for AES always 16
-    my ($ct, $tag) = gcm_encrypt_authenticate('AES', $cek, $iv, $encoded_header, $payload);
+    my ($ct, $tag) = gcm_encrypt_authenticate('AES', $cek, $iv, $aad, $payload);
     return ($ct, $iv, $tag);
   }
   elsif ($enc =~ /^A(128|192|256)CBC-HS(256|384|512)$/) {
@@ -369,8 +370,8 @@ sub _encrypt_jwe_payload {
     my $iv = random_bytes(16); # for AES always 16
     my $m = Crypt::Mode::CBC->new('AES');
     my $ct = $m->encrypt($payload, $aes_key, $iv);
-    my $aad_len = length($encoded_header); # AAD == original encoded header
-    my $mac_input = $encoded_header . $iv . $ct . pack('N2', ($aad_len / 2147483647)*8, ($aad_len % 2147483647)*8);
+    my $aad_len = length($aad);
+    my $mac_input = $aad . $iv . $ct . pack('N2', ($aad_len / 2147483647)*8, ($aad_len % 2147483647)*8);
     my $mac = hmac($hash, $mac_key, $mac_input);
     my $sig_len = length($mac) / 2;
     my $sig = substr($mac, 0, $sig_len);
@@ -380,13 +381,13 @@ sub _encrypt_jwe_payload {
 }
 
 sub _decrypt_jwe_payload {
-  my ($cek, $enc, $encoded_header, $ct, $iv, $tag) = @_;
+  my ($cek, $enc, $aad, $ct, $iv, $tag) = @_;
   if ($enc =~ /^A(128|192|256)GCM$/) {
     # https://tools.ietf.org/html/rfc7518#section-5.3
     my $len1 = $1/8;
     my $len2 = length($cek);
     croak "JWE: wrong AES key length ($len1 vs. $len2) for $enc" unless $len1 == $len2;
-    return gcm_decrypt_verify('AES', $cek, $iv, $encoded_header, $ct, $tag);
+    return gcm_decrypt_verify('AES', $cek, $iv, $aad, $ct, $tag);
   }
   elsif ($enc =~ /^A(128|192|256)CBC-HS(256|384|512)$/) {
     # https://tools.ietf.org/html/rfc7518#section-5.2
@@ -395,8 +396,8 @@ sub _decrypt_jwe_payload {
     my $mac_key = substr($cek, 0, $key_len);
     my $aes_key = substr($cek, $key_len, $key_len);
     croak "JWE: wrong AES key length ($key_len vs. $size)" unless $key_len == $size;
-    my $aad_len = length($encoded_header); # AAD == original encoded header
-    my $mac_input = $encoded_header . $iv . $ct . pack('N2', ($aad_len / 2147483647)*8, ($aad_len % 2147483647)*8);
+    my $aad_len = length($aad); # AAD == original encoded header
+    my $mac_input = $aad . $iv . $ct . pack('N2', ($aad_len / 2147483647)*8, ($aad_len % 2147483647)*8);
     my $mac = hmac($hash, $mac_key, $mac_input);
     my $sig_len = length($mac) / 2;
     my $sig = substr($mac, 0, $sig_len);
@@ -432,18 +433,20 @@ sub _encode_jwe {
   # encode header
   my $json_header = encode_json($header);
   my $b64u_header = encode_base64url($json_header);
+  my $b64u_aad    = defined $args{aad} ? encode_base64url($args{aad}) : undef;
   # encrypt payload
-  my ($ct, $iv, $tag) = _encrypt_jwe_payload($cek, $enc, $b64u_header, $payload);
+  my ($ct, $iv, $tag) = _encrypt_jwe_payload($cek, $enc, $b64u_header, $b64u_aad, $payload);
   # return token parts
   return ( $b64u_header,
            encode_base64url($ecek),
            encode_base64url($iv),
            encode_base64url($ct),
-           encode_base64url($tag));
+           encode_base64url($tag),
+           $b64u_aad);
 }
 
 sub _decode_jwe {
-  my ($b64u_header, $b64u_ecek, $b64u_iv, $b64u_ct, $b64u_tag, %args) = @_;
+  my ($b64u_header, $b64u_ecek, $b64u_iv, $b64u_ct, $b64u_tag, $b64u_aad, $unprotected, $shared_unprotected, %args) = @_;
   my $header = _b64u_to_hash($b64u_header);
   my $ecek   = decode_base64url($b64u_ecek);
   my $ct     = decode_base64url($b64u_ct);
@@ -476,10 +479,12 @@ sub _decode_jwe {
 
   croak "JWE: missing 'key'" if !$key;
   my $cek = _decrypt_jwe_cek($ecek, $key, $header);
-  my $payload = _decrypt_jwe_payload($cek, $header->{enc}, $b64u_header, $ct, $iv, $tag);
+  my $aad = defined $b64u_aad ? "$b64u_header.$b64u_aad" : $b64u_header;
+  my $payload = _decrypt_jwe_payload($cek, $header->{enc}, $aad, $ct, $iv, $tag);
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
   $payload = _payload_dec($payload, $args{decode_payload});
   _verify_claims($payload, %args) if ref $payload eq 'HASH'; # croaks on error
+  $header = { %$shared_unprotected, %$unprotected, %$header }; # merge headers
   return ($header, $payload);
 }
 
@@ -609,12 +614,12 @@ sub _decode_jws {
 sub encode_jwt {
   my %args = @_;
 
+  my $ser = $args{serialization} // 'compact';
   if ($args{alg} =~ /^(none|((HS|RS|PS|ES)(512|384|256)))$/) {
     ###JWS
     my ($b64u_header, $b64u_payload, $b64u_signature) = _encode_jws(%args);
-    my $ser = $args{serialization} // 'compact';
     if ($ser eq 'compact') { # https://tools.ietf.org/html/rfc7515#section-7.1
-      croak "JWT: cannot use 'unprotected_headers' with compact serialization" if ref $args{unprotected_headers} eq 'HASH';
+      croak "JWT: cannot use 'unprotected_headers' with compact serialization" if defined $args{unprotected_headers};
       return "$b64u_header.$b64u_payload.$b64u_signature";
     }
     elsif ($ser eq 'flattened') { # https://tools.ietf.org/html/rfc7515#section-7.2.2
@@ -623,13 +628,37 @@ sub encode_jwt {
       return encode_json($token);
     }
     else {
-      croak "JWS: unsupported JWS serialization '$ser'";
+      croak "JWT: unsupported JWS serialization '$ser'";
     }
   }
   else {
     ### JWE
-    my ($b64u_header, $b64u_ecek, $b64u_iv, $b64u_ct, $b64u_tag) = _encode_jwe(%args);
-    return "$b64u_header.$b64u_ecek.$b64u_iv.$b64u_ct.$b64u_tag";
+    my ($b64u_header, $b64u_ecek, $b64u_iv, $b64u_ct, $b64u_tag, $b64u_aad) = _encode_jwe(%args);
+    if ($ser eq 'compact') { # https://tools.ietf.org/html/rfc7516#section-7.1
+      croak "JWT: cannot use 'aad' with compact serialization" if defined $args{aad};
+      croak "JWT: cannot use 'unprotected_headers' with compact serialization" if defined $args{unprotected_headers};
+      croak "JWT: cannot use 'shared_unprotected_headers' with compact serialization" if defined $args{shared_unprotected_headers};
+      return "$b64u_header.$b64u_ecek.$b64u_iv.$b64u_ct.$b64u_tag";
+    }
+    elsif ($ser eq 'flattened') { # https://tools.ietf.org/html/rfc7516#section-7.2.2
+      my $token = {
+        protected     => $b64u_header,
+        encrypted_key => $b64u_ecek,
+        iv            => $b64u_iv,
+        ciphertext    => $b64u_ct,
+        tag           => $b64u_tag,
+      };
+      # header: JWE Per-Recipient Unprotected Header when the JWE Per-Recipient Unprotected Header
+      $token->{header} = \%{$args{unprotected_headers}} if ref $args{unprotected_headers} eq 'HASH';
+      # unprotected: JWE Shared Unprotected Header
+      $token->{unprotected} = \%{$args{shared_unprotected_headers}} if ref $args{shared_unprotected_headers} eq 'HASH';
+      # aad: Additional Authenticated Data (AAD)
+      $token->{aad} = $b64u_aad if defined $b64u_aad;
+      return encode_json($token);
+    }
+    else {
+      croak "JWT: unsupported JWE serialization '$ser'";
+    }
   }
 }
 
@@ -642,7 +671,7 @@ sub decode_jwt {
   }
   elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]*)\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)$/) {
     # JWE token (5 segments)
-    ($header, $payload) = _decode_jwe($1, $2, $3, $4, $5, %args);
+    ($header, $payload) = _decode_jwe($1, $2, $3, $4, $5, undef, {}, {}, %args);
   }
   elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]*)$/) {
     # JWS token (3 segments)
@@ -653,6 +682,10 @@ sub decode_jwt {
     if ($hash->{payload} && $hash->{protected}) {
       # Flattened JWS JSON Serialization
       ($header, $payload) = _decode_jws($hash->{protected}, $hash->{payload}, $hash->{signature}, $hash->{header}, %args);
+    }
+    elsif ($hash->{ciphertext} && $hash->{protected}) {
+      # Flattened JWE JSON Serialization
+      ($header, $payload) = _decode_jwe($hash->{protected}, $hash->{encrypted_key}, $hash->{iv}, $hash->{ciphertext}, $hash->{tag}, $hash->{aad}, $hash->{header}, $hash->{unprotected}, %args);
     }
     else {
       croak "JWT: unsupported JWS/JWT JSON Serialization";
@@ -701,6 +734,8 @@ The implementation covers not only B<JSON Web Signature (JWS)> - L<https://tools
 but also B<JSON Web Encryption (JWE)> - L<https://tools.ietf.org/html/rfc7516>.
 
 The module implements B<all (100%) algorithms> defined in L<https://tools.ietf.org/html/rfc7518> - B<JSON Web Algorithms (JWA)>.
+
+This module supports B<Compact JWS/JWE> and B<Flattened JWS/JWE JSON> serialization, general JSON serialization is not supported yet.
 
 =head1 EXPORT
 
@@ -1160,6 +1195,24 @@ iteration count (p2c) via C<extra_headers> like this:
 
  my $token = encode_jwt(payload=>$p, key=>$k, alg=>'PBES2-HS512+A256KW', extra_headers=>{p2c=8000, p2s=>32});
  #NOTE: handling of p2s header is a special case, in the end it is replaced with the generated salt
+
+=item unprotected_headers
+
+A hash with additional integrity unprotected headers - JWS and JWE (not available for C<compact> serialization);
+
+=item shared_unprotected_headers
+
+A hash with additional integrity unprotected headers - JWE only (not available for C<compact> serialization);
+
+=item aad
+
+Additional Authenticated Data - scalar value with any (even raw octects) data - JWE only (not available for C<compact> serialization);
+
+=item serialization
+
+Specify serialization method: C<compat> (= default) for Compact JWS/JWE serialization or C<flattened> for Flattened JWS/JWE JSON serialization.
+
+General JSON serialization is not supported yet.
 
 =item zip
 
