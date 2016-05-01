@@ -1,5 +1,9 @@
 Changes for Crypt-JWT distribution
 
+0.012   2015/05/XX
+        - JWS is now able to use the key from jwk header
+        - added support for Flattened JSON serialization (for both JWS and JWE)
+
 0.011   2015/10/22
         - switch to JSON::MaybeXS https://github.com/DCIT/perl-Crypt-JWT/pull/1
 
