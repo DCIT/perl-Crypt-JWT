@@ -773,7 +773,9 @@ Mandatory argument, a string with either JWS or JWE JSON Web Token.
 
 =item key
 
-A key used for token decryption (JWE) or token signature validation (JWS). The value depends on C<alg> token header value.
+A key used for token decryption (JWE) or token signature validation (JWS).
+If not given, and the token header contains a C<jwk> header value, that value will be used.
+The value depends on the C<alg> token header value.
 
  JWS alg header      key value
  ------------------  ----------------------------------
@@ -819,7 +821,12 @@ A key used for token decryption (JWE) or token signature validation (JWS). The v
  ECDH-ES+A192KW      private ECC key, see ECDH-ES
  ECDH-ES+A256KW      private ECC key, see ECDH-ES
 
-Examples with raw octect keys:
+Example with key from C<jwk> token header:
+
+ my $data = decode_jwt(token=>$t);
+ my ($header, $data) = decode_jwt(token=>$t, decode_header=>1);
+
+Examples with raw octet keys:
 
  #string
  my $data = decode_jwt(token=>$t, key=>'secretkey');
