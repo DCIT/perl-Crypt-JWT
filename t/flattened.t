@@ -42,6 +42,9 @@ is($header->{kid}, "e9bc097a-ce51-4036-9562-d2ade882db0d");
         qi => "eNho5yRBEBxhGBtQRww9QirZsB66TrfFReG_CcteI1aCneT0ELGhYlRlCtUkTRclIfuEPmNsNDPbLoLqqCVznFbvdB7x-Tl-m0l_eFTj2KiqwGqE9PZB9nNTwMVvH3VRRSLWACvPnSiwP8N5Usy-WRXS-V7TbpxIhvepTfE0NNo",
     };
 
+    #https://tools.ietf.org/html/rfc7516#appendix-A.3.3
+    my $key = { "kty" => "oct", "k" => "GawgguFyGrWKav7AX4VKUg" };
+
     #https://tools.ietf.org/html/rfc7516#appendix-A.5
     my $jwe_flattened = JSON::MaybeXS::encode_json(
         {
@@ -55,8 +58,8 @@ is($header->{kid}, "e9bc097a-ce51-4036-9562-d2ade882db0d");
         },
     );
 
-    my ($header, $data) = decode_jwt(token=>$jwe_flattened, key=>$jwk_hr, verify_exp=>0, decode_header=>1);
+    my ($header, $data) = decode_jwt(token=>$jwe_flattened, key=>$key, verify_exp=>0, decode_header=>1);
 
-    diag explain $header;
-    diag explain $data;
+    #diag explain $header;
+    #diag explain $data;
 }

@@ -71,6 +71,9 @@ sub _prepare_oct_key {
   elsif (!ref $key) {
     return $key;
   }
+warn "XXX: ref=".ref($key);
+use Data::Dump 'pp';
+pp $key;
   croak "JWT: invalid oct key";
 }
 
@@ -478,13 +481,13 @@ sub _decode_jwe {
   }
 
   croak "JWE: missing 'key'" if !$key;
+  $header = { %$shared_unprotected, %$unprotected, %$header }; # merge headers
   my $cek = _decrypt_jwe_cek($ecek, $key, $header);
   my $aad = defined $b64u_aad ? "$b64u_header.$b64u_aad" : $b64u_header;
   my $payload = _decrypt_jwe_payload($cek, $header->{enc}, $aad, $ct, $iv, $tag);
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
   $payload = _payload_dec($payload, $args{decode_payload});
   _verify_claims($payload, %args) if ref $payload eq 'HASH'; # croaks on error
-  $header = { %$shared_unprotected, %$unprotected, %$header }; # merge headers
   return ($header, $payload);
 }
 
