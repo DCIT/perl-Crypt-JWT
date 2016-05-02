@@ -71,9 +71,6 @@ sub _prepare_oct_key {
   elsif (!ref $key) {
     return $key;
   }
-warn "XXX: ref=".ref($key);
-use Data::Dump 'pp';
-pp $key;
   croak "JWT: invalid oct key";
 }
 
