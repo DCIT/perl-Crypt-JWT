@@ -98,7 +98,6 @@ sub _b64u_to_hash {
   return undef unless $b64url;
   my $json = decode_base64url($b64url);
   return undef unless $json;
-  utf8::decode($json) if !utf8::is_utf8($json);
   my $hash = decode_json($json);
   return $hash;
 }
@@ -240,7 +239,7 @@ sub _payload_enc {
     $payload = encode_json($payload);
   }
   else {
-    utf8::encode($payload) if utf8::is_utf8($payload);
+    utf8::downgrade($payload, 1) or croak "JWT: payload cannot contain wide character";
   }
   return $payload;
 }
@@ -249,7 +248,6 @@ sub _payload_dec {
   my ($payload, $decode_payload) = @_;
   return $payload if defined $decode_payload && $decode_payload == 0;
   my $de = $payload;
-  utf8::decode($de) if !utf8::is_utf8($de);
   $de = eval { decode_json($de) };
   if ($decode_payload) {
     croak "JWT: payload not a valid JSON" unless $de;

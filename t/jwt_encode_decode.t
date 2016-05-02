@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use utf8;
 
 use Crypt::JWT qw(encode_jwt decode_jwt);
 use Crypt::PK::ECC;
@@ -159,6 +160,12 @@ for my $enc (@enclist) {
   ok($token, "token: enc=>$enc alg=>$alg");
   my $decoded = decode_jwt(key=>$k, token=>$token, alg=>$alg, enc=>$enc);
   is($decoded, 'testik', "decoded: enc=>$enc alg=>$alg");
+
+  my $payload_h = {str=>'žluťoučký kůň'};
+  my $token_h = encode_jwt(key=>$k, payload=>$payload_h, alg=>$alg, enc=>$enc);
+  ok($token_h, "token_h: enc=>$enc alg=>$alg");
+  my $decoded_h = decode_jwt(key=>$k, token=>$token_h, alg=>$alg, enc=>$enc, decode_payload=>1);
+  is($decoded_h->{str}, 'žluťoučký kůň', "decoded: enc=>$enc alg=>$alg");
 }
 
 done_testing;
