@@ -1,6 +1,6 @@
 Changes for Crypt-JWT distribution
 
-0.012   2015/05/XX
+0.012   2015/05/02
         - JWS is now able to use the key from jwk header
         - added support for Flattened JSON serialization (for both JWS and JWE)
 

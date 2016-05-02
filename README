@@ -22,6 +22,9 @@ DESCRIPTION
     The module implements all (100%) algorithms defined in
     <https://tools.ietf.org/html/rfc7518> - JSON Web Algorithms (JWA).
 
+    This module supports Compact JWS/JWE and Flattened JWS/JWE JSON
+    serialization, general JSON serialization is not supported yet.
+
 EXPORT
     Nothing is exported by default.
 
@@ -51,7 +54,9 @@ FUNCTIONS
          my $data = decode_jwt(token=>$t, key=>$k);
 
     key A key used for token decryption (JWE) or token signature validation
-        (JWS). The value depends on "alg" token header value.
+        (JWS). If not given, and the token header contains a "jwk" header
+        value, that value will be used. The value depends on the "alg" token
+        header value.
 
          JWS alg header      key value
          ------------------  ----------------------------------
@@ -97,7 +102,12 @@ FUNCTIONS
          ECDH-ES+A192KW      private ECC key, see ECDH-ES
          ECDH-ES+A256KW      private ECC key, see ECDH-ES
 
-        Examples with raw octect keys:
+        Example with key from "jwk" token header:
+
+         my $data = decode_jwt(token=>$t);
+         my ($header, $data) = decode_jwt(token=>$t, decode_header=>1);
+
+        Examples with raw octet keys:
 
          #string
          my $data = decode_jwt(token=>$t, key=>'secretkey');
@@ -470,6 +480,25 @@ FUNCTIONS
 
          my $token = encode_jwt(payload=>$p, key=>$k, alg=>'PBES2-HS512+A256KW', extra_headers=>{p2c=8000, p2s=>32});
          #NOTE: handling of p2s header is a special case, in the end it is replaced with the generated salt
+
+    unprotected_headers
+        A hash with additional integrity unprotected headers - JWS and JWE
+        (not available for "compact" serialization);
+
+    shared_unprotected_headers
+        A hash with additional integrity unprotected headers - JWE only (not
+        available for "compact" serialization);
+
+    aad Additional Authenticated Data - scalar value with any (even raw
+        octects) data - JWE only (not available for "compact"
+        serialization);
+
+    serialization
+        Specify serialization method: "compat" (= default) for Compact
+        JWS/JWE serialization or "flattened" for Flattened JWS/JWE JSON
+        serialization.
+
+        General JSON serialization is not supported yet.
 
     zip Compression method, currently 'deflate' is the only one supported.
         "undef" (default) means no compression.
