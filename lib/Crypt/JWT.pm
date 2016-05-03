@@ -612,7 +612,7 @@ sub _decode_jws {
 sub encode_jwt {
   my %args = @_;
 
-  my $ser = $args{serialization} // 'compact';
+  my $ser = $args{serialization} || 'compact';
   if ($args{alg} =~ /^(none|((HS|RS|PS|ES)(512|384|256)))$/) {
     ###JWS
     my ($b64u_header, $b64u_payload, $b64u_signature) = _encode_jws(%args);
