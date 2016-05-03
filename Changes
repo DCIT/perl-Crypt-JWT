@@ -1,5 +1,10 @@
 Changes for Crypt-JWT distribution
 
+0.013   2015/05/03
+        - fix misused utf8:stuff
+        - fix 5.8.* compatibility
+        - using Base64 en/decoding routines from CryptX
+
 0.012   2015/05/02
         - JWS is now able to use the key from jwk header
         - added support for Flattened JSON serialization (for both JWS and JWE)
