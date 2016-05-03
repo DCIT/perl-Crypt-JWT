@@ -11,7 +11,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
 
 use Carp;
-use MIME::Base64 qw(decode_base64url encode_base64url);
+use Crypt::Misc qw(decode_b64u encode_b64u);
 use JSON::MaybeXS qw(decode_json encode_json);
 use Crypt::PK::RSA;
 use Crypt::PK::ECC;
@@ -66,7 +66,7 @@ sub _prepare_oct_key {
   my ($key) = @_;
   croak "JWT: undefined oct key" unless defined $key;
   if (ref $key eq 'HASH' && $key->{k} && $key->{kty} && $key->{kty} eq 'oct') {
-    return decode_base64url($key->{k});
+    return decode_b64u($key->{k});
   }
   elsif (!ref $key) {
     return $key;
@@ -96,7 +96,7 @@ sub _kid_lookup {
 sub _b64u_to_hash {
   my $b64url = shift;
   return undef unless $b64url;
-  my $json = decode_base64url($b64url);
+  my $json = decode_b64u($b64url);
   return undef unless $json;
   my $hash = decode_json($json);
   return $hash;
@@ -283,8 +283,8 @@ sub _encrypt_jwe_cek {
   elsif ($alg =~ /^A(128|192|256)GCMKW$/) {
     my ($t, $i);
     ($ecek, $t, $i) = gcm_key_wrap(_prepare_oct_key($key), $cek);
-    $hdr->{tag} = encode_base64url($t);
-    $hdr->{iv}  = encode_base64url($i);
+    $hdr->{tag} = encode_b64u($t);
+    $hdr->{iv}  = encode_b64u($i);
     return ($cek, $ecek);
   }
   elsif ($alg =~ /^PBES2-HS(512|384|256)\+A(128|192|256)KW$/) {
@@ -292,7 +292,7 @@ sub _encrypt_jwe_cek {
     my $salt = random_bytes($len);
     my $iter = looks_like_number($hdr->{p2c}) ? $hdr->{p2c} : 5000;
     $ecek = pbes2_key_wrap(_prepare_oct_key($key), $cek, $alg, $salt, $iter);
-    $hdr->{p2s} = encode_base64url($salt);
+    $hdr->{p2s} = encode_b64u($salt);
     $hdr->{p2c} = $iter;
     return ($cek, $ecek);
   }
@@ -326,10 +326,10 @@ sub _decrypt_jwe_cek {
     return aes_key_unwrap(_prepare_oct_key($key), $ecek);
   }
   elsif ($alg =~ /^A(128|192|256)GCMKW$/) {
-    return gcm_key_unwrap(_prepare_oct_key($key), $ecek, decode_base64url($hdr->{tag}), decode_base64url($hdr->{iv}));
+    return gcm_key_unwrap(_prepare_oct_key($key), $ecek, decode_b64u($hdr->{tag}), decode_b64u($hdr->{iv}));
   }
   elsif ($alg =~ /^PBES2-HS(512|384|256)\+A(128|192|256)KW$/) {
-    return pbes2_key_unwrap(_prepare_oct_key($key), $ecek, $alg, decode_base64url($hdr->{p2s}), $hdr->{p2c});
+    return pbes2_key_unwrap(_prepare_oct_key($key), $ecek, $alg, decode_b64u($hdr->{p2s}), $hdr->{p2c});
   }
   elsif ($alg =~ /^RSA(-OAEP|-OAEP-256|1_5)$/) {
     $key = _prepare_rsa_key($key);
@@ -430,26 +430,26 @@ sub _encode_jwe {
   my ($cek, $ecek) = _encrypt_jwe_cek($key, $header); # adds some header items
   # encode header
   my $json_header = encode_json($header);
-  my $b64u_header = encode_base64url($json_header);
-  my $b64u_aad    = defined $args{aad} ? encode_base64url($args{aad}) : undef;
+  my $b64u_header = encode_b64u($json_header);
+  my $b64u_aad    = defined $args{aad} ? encode_b64u($args{aad}) : undef;
   # encrypt payload
   my ($ct, $iv, $tag) = _encrypt_jwe_payload($cek, $enc, $b64u_header, $b64u_aad, $payload);
   # return token parts
   return ( $b64u_header,
-           encode_base64url($ecek),
-           encode_base64url($iv),
-           encode_base64url($ct),
-           encode_base64url($tag),
+           encode_b64u($ecek),
+           encode_b64u($iv),
+           encode_b64u($ct),
+           encode_b64u($tag),
            $b64u_aad);
 }
 
 sub _decode_jwe {
   my ($b64u_header, $b64u_ecek, $b64u_iv, $b64u_ct, $b64u_tag, $b64u_aad, $unprotected, $shared_unprotected, %args) = @_;
   my $header = _b64u_to_hash($b64u_header);
-  my $ecek   = decode_base64url($b64u_ecek);
-  my $ct     = decode_base64url($b64u_ct);
-  my $iv     = decode_base64url($b64u_iv);
-  my $tag    = decode_base64url($b64u_tag);
+  my $ecek   = decode_b64u($b64u_ecek);
+  my $ct     = decode_b64u($b64u_ct);
+  my $iv     = decode_b64u($b64u_iv);
+  my $tag    = decode_b64u($b64u_tag);
 
   my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
   if ($header->{kid} && $args{kid_keys}) {
@@ -509,12 +509,12 @@ sub _sign_jws {
     my $pk = _prepare_ecc_key($key);
     $sig  = $pk->sign_message_rfc7518($data, "SHA$1");
   }
-  return encode_base64url($sig);
+  return encode_b64u($sig);
 }
 
 sub _verify_jws {
   my ($b64u_header, $b64u_payload, $b64u_sig, $alg, $key) = @_;
-  my $sig = decode_base64url($b64u_sig);
+  my $sig = decode_b64u($b64u_sig);
   my $data = "$b64u_header.$b64u_payload";
 
   if ($alg eq 'none' ) { # no integrity
@@ -556,13 +556,13 @@ sub _encode_jws {
   # compress payload
   $payload = _payload_zip($payload, $header, $args{zip}) if $args{zip}; # may set some header items
   # encode payload
-  my $b64u_payload = encode_base64url($payload);
+  my $b64u_payload = encode_b64u($payload);
   # prepare header
   $header->{alg} = $alg;
   #REMOVED: $header->{typ} = 'JWT' if !exists $header->{typ} && $args{auto_typ};
   # encode header
   my $json_header = encode_json($header);
-  my $b64u_header = encode_base64url($json_header);
+  my $b64u_header = encode_b64u($json_header);
   # key
   croak "JWS: missing 'key'" if !$args{key} && $alg ne 'none';
   my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
@@ -601,7 +601,7 @@ sub _decode_jws {
     my $valid = _verify_jws($b64u_header, $b64u_payload, $b64u_sig, $alg, $key);
     croak "JWS: decode failed" if !$valid;
   }
-  my $payload = decode_base64url($b64u_payload);
+  my $payload = decode_b64u($b64u_payload);
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
   $payload = _payload_dec($payload, $args{decode_payload});
   _verify_claims($payload, %args) if ref $payload eq 'HASH'; # croaks on error

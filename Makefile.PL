@@ -10,11 +10,10 @@ WriteMakefile(
     ABSTRACT     => 'JSON Web Token',
     LICENSE      => 'perl',
     PREREQ_PM    => {
-      'MIME::Base64'        => '3.11',     # (en|de)code_base64url
-      'JSON::MaybeXS'       => '1.003005', # (en|de)code_json
-      'Exporter'            => '5.59',     # we need: use Exporter 'import';
+      'JSON::MaybeXS'       => '1.003005', # we need: (en|de)code_json
+      'Exporter'            => '5.57',     # we need: use Exporter 'import';
       'Compress::Raw::Zlib' => 0,
-      'CryptX'              => '0.024',
+      'CryptX'              => '0.029',    # we need: (en|de)code_b64u
     },
     MIN_PERL_VERSION => '5.006',
     META_MERGE       => {
