@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Crypt::KeyWrap qw(gcm_key_wrap gcm_key_unwrap);
-use MIME::Base64 qw(decode_base64url);
+use Crypt::Misc qw(decode_b64u);
 
 {
   ### test vector from https://github.com/rohe/pyjwkest/blob/5c1e321237dd2affb8b8434f0ca2a15c4da5e2b1/src/jwkest/aes_gcm.py

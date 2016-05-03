@@ -5,7 +5,7 @@ use Test::More;
 use Crypt::JWT qw(encode_jwt decode_jwt);
 use Crypt::PK::ECC;
 use Crypt::PK::RSA;
-use MIME::Base64 qw(encode_base64url);
+use Crypt::Misc qw(encode_b64u);
 use JSON::MaybeXS qw(encode_json);
 
 # key password is 'secret'

@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Crypt::KeyWrap qw(aes_key_wrap aes_key_unwrap);
-use MIME::Base64 qw(decode_base64url);
+use Crypt::Misc qw(decode_b64u);
 
 my @tv = (
   {
@@ -680,8 +680,8 @@ my @tv = (
 {
   # https://tools.ietf.org/html/draft-ietf-jose-json-web-encryption
   my $keydata = join '', map { chr($_) } (4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63, 170, 106, 206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156, 44, 207);
-  my $kek = decode_base64url("GawgguFyGrWKav7AX4VKUg");
-  my $ct  = decode_base64url("6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ");
+  my $kek = decode_b64u("GawgguFyGrWKav7AX4VKUg");
+  my $ct  = decode_b64u("6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ");
   my $wrap    = aes_key_wrap($kek, $keydata);
   is(unpack("H*", $wrap), unpack("H*",$ct));
   my $unwrap  = aes_key_unwrap($kek, $wrap);

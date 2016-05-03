@@ -3,7 +3,7 @@ use warnings;
 use Test::More;
 use Crypt::KeyWrap qw(ecdh_key_wrap ecdh_key_unwrap);
 use Crypt::PK::ECC;
-use MIME::Base64 qw(decode_base64url);
+use Crypt::Misc qw(decode_b64u);
 
 my $kek_private=Crypt::PK::ECC->new(\'{"kty":"EC","crv":"P-256","x":"BHId3zoDv6pDgOUh8rKdloUZ0YumRTcaVDCppUPoYgk","y":"g3QIDhaWEksYtZ9OWjNHn9a6-i_P9o5_NrdISP0VWDU","d":"KpTnMOHEpskXvuXHFCfiRtGUHUZ9Dq5CCcZQ-19rYs4"}');
 
