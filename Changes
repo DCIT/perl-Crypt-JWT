@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.014   2015/05/04
+        - using Base64 en/decoding routines from CryptX also in tests
+
 0.013   2015/05/03
         - fix misused utf8:stuff
         - fix 5.8.* compatibility
