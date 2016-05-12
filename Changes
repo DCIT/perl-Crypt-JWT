@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.016   2015/05/12
+        - require CryptX-0.034 (jws_no_key.t fails with older versions)
+
 0.015   2015/05/12
         - fix broken test jws_no_key.t
 

@@ -13,7 +13,7 @@ WriteMakefile(
       'JSON::MaybeXS'       => '1.003005', # we need: (en|de)code_json
       'Exporter'            => '5.57',     # we need: use Exporter 'import';
       'Compress::Raw::Zlib' => 0,
-      'CryptX'              => '0.029',    # we need: (en|de)code_b64u
+      'CryptX'              => '0.034',
     },
     MIN_PERL_VERSION => '5.006',
     META_MERGE       => {
