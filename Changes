@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.015   2015/05/12
+        - fix broken test jws_no_key.t
+
 0.014   2015/05/04
         - using Base64 en/decoding routines from CryptX also in tests
 
