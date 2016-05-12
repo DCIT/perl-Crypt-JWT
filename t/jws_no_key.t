@@ -16,10 +16,10 @@ is_deeply(
     {
         'alg' => 'RS256',
         'jwk' => {
-            'e'   => '010001',
+            'e'   => 'AQAB',
             'kty' => 'RSA',
             'n' =>
-              'c9022fcc34b1be46b703769357729fde4a0ec48576de37626643ddf4ed68b65ec15fe7c82a00db3380691892d8f8790b9d978b8aac741d9261ff148e1d4c55eae8be24748cd9f02436adf4c310b7da9e9f4fdea8b673af94b1ce3148b81693d3b78e44060db38a312dfc4704df1e3c45c39f3d38bb1f47d9c40bae5eb6e46dee47aa3b39a948ef975258189bb4e4d47ebeaeb92f63fe87c3fdc8100e6507fc4355c01e1e4540fc0ef81eb0399ce2ddccb5f841d67c7898ceacb7d583397e51e15710705457b6d481f81f0623bc7349d4312122f19a440d15b0e63a42350b38afd63183d5ab5b26b8d8037bc7a053116ebc673189bc79e76b6b747b8089a4d389'
+              'yQIvzDSxvka3A3aTV3Kf3koOxIV23jdiZkPd9O1otl7BX-fIKgDbM4BpGJLY-HkLnZeLiqx0HZJh_xSOHUxV6ui-JHSM2fAkNq30wxC32p6fT96otnOvlLHOMUi4FpPTt45EBg2zijEt_EcE3x48RcOfPTi7H0fZxAuuXrbkbe5Hqjs5qUjvl1JYGJu05NR-vq65L2P-h8P9yBAOZQf8Q1XAHh5FQPwO-B6wOZzi3cy1-EHWfHiYzqy31YM5flHhVxBwVFe21IH4HwYjvHNJ1DEhIvGaRA0VsOY6QjULOK_WMYPVq1smuNgDe8egUxFuvGcxibx552trdHuAiaTTiQ'
         },
         'nonce' => undef
     },
