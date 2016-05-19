@@ -952,11 +952,11 @@ C<ARRAY ref> a list of accepted 'alg' algorithms
 
 C<Regexp> that has to match 'alg' algorithm name
 
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>'HS256');
+ my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>'HS256');
  #or
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>['HS256','HS384']);
+ my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>['HS256','HS384']);
  #or
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>qr/^HS(256|384|512)$/);
+ my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>qr/^HS(256|384|512)$/);
 
 =item accepted_enc
 
