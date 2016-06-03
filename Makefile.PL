@@ -19,6 +19,7 @@ WriteMakefile(
     META_MERGE       => {
       resources => {
         repository => 'https://github.com/DCIT/perl-Crypt-JWT',
+        bugtracker => 'https://github.com/DCIT/perl-Crypt-JWT/issues',
       },
     },
     dist => {
