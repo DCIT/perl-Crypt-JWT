@@ -830,7 +830,7 @@ Examples with raw octet keys:
  my $data = decode_jwt(token=>$t, key=>'secretkey');
  #binary key
  my $data = decode_jwt(token=>$t, key=>pack("H*", "788A6E38F36B7596EF6A669E94"));
- #pel HASH ref with JWK structure (key type 'oct')
+ #perl HASH ref with JWK structure (key type 'oct')
  my $data = decode_jwt(token=>$t, key=>{kty=>'oct', k=>"GawgguFyGrWKav7AX4VKUg"});
 
 Examples with RSA keys:
@@ -866,7 +866,7 @@ Examples with RSA keys:
  my $data = decode_jwt(token=>$t, key=>Crypt::OpenSSL::X509->new_from_file('cert.pem'));
  my $data = decode_jwt(token=>$t, key=>Crypt::OpenSSL::X509->new_from_string($cert));
 
- #pel HASH ref with JWK structure (key type 'RSA')
+ #perl HASH ref with JWK structure (key type 'RSA')
  my $rsa_priv = {
    kty => "RSA",
    n   => "0vx7agoebGcQSuuPiLJXZpt...eZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",
@@ -901,7 +901,7 @@ Examples with ECC keys:
  my $data = decode_jwt(token=>$t, key=>Crypt::PK::ECC->new('keyfile.pem'));
  my $data = decode_jwt(token=>$t, key=>Crypt::PK::ECC->new(\$pem_key_string));
 
- #pel HASH ref with JWK structure (key type 'RSA')
+ #perl HASH ref with JWK structure (key type 'RSA')
  my $ecc_priv = {
    kty => "EC",
    crv => "P-256",
