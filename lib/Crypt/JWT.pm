@@ -667,11 +667,11 @@ sub decode_jwt {
   if (!$args{token}) {
     croak "JWT: missing token";
   }
-  elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]*)\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)$/) {
+  elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*$/) {
     # JWE token (5 segments)
     ($header, $payload) = _decode_jwe($1, $2, $3, $4, $5, undef, {}, {}, %args);
   }
-  elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]*)$/) {
+  elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*$/) {
     # JWS token (3 segments)
     ($header, $payload) = _decode_jws($1, $2, $3, {}, %args);
   }
