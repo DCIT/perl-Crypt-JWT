@@ -3,7 +3,7 @@ package Crypt::JWT;
 use strict;
 use warnings;
 
-our $VERSION = '0.018';
+our $VERSION = '0.019';
 
 use Exporter 'import';
 our %EXPORT_TAGS = ( all => [qw(decode_jwt encode_jwt)] );
@@ -933,6 +933,12 @@ This parametes can be either a JWK Set JSON string (see RFC7517) or a perl HASH 
     ]
   };
   my $payload = decode_jwt(token=>$t, kid_keys=>$keylist);
+
+Since 0.19 we also support:
+
+  use LWP::Simple;
+  my $google_certs = get('https://www.googleapis.com/oauth2/v1/certs');
+  my $payload = decode_jwt(token => $t, kid_keys => $google_certs);
 
 When the token header contains 'kid' item the corresponding key is looked up in C<kid_keys> list and used for token
 decoding (you do not need to pass the explicit key via C<key> parameter).

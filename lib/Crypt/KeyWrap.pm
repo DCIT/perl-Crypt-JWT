@@ -3,7 +3,7 @@ package Crypt::KeyWrap;
 use strict;
 use warnings;
 
-our $VERSION = '0.018';
+our $VERSION = '0.019';
 
 use Exporter 'import';
 our %EXPORT_TAGS = ( all => [qw(aes_key_wrap aes_key_unwrap gcm_key_wrap gcm_key_unwrap pbes2_key_wrap pbes2_key_unwrap ecdh_key_wrap ecdh_key_unwrap ecdhaes_key_wrap ecdhaes_key_unwrap rsa_key_wrap rsa_key_unwrap)] );
