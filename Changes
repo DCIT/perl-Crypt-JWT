@@ -1,7 +1,8 @@
 Changes for Crypt-JWT distribution
 
-0.019   2018/01/27
+0.019   2018/01/26
         - fix #11 kid keys
+        - fix #9  Support for Java lib that pads base64 encoding 
 
 0.018   2016/08/31
         - doc fixes
