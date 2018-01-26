@@ -78,13 +78,20 @@ sub _kid_lookup {
   my ($kid, $kid_keys, $alg) = @_;
   $kid_keys = decode_json($kid_keys) unless ref $kid_keys;
   return undef unless ref $kid_keys eq 'HASH';
-  return undef unless exists $kid_keys->{keys} && ref $kid_keys->{keys} eq 'ARRAY';
   my $found;
-  for (@{$kid_keys->{keys}}) {
-    if ($_->{kid} && $_->{kty} && $_->{kid} eq $kid) {
-      $found = $_;
-      last;
+  if (exists $kid_keys->{keys} && ref $kid_keys->{keys} eq 'ARRAY') {
+    #FORMAT: { keys => [ {kid=>'A', kty=>?, ...}, {kid=>'B', kty=>?, ...} ] }
+    for (@{$kid_keys->{keys}}) {
+      if ($_->{kid} && $_->{kty} && $_->{kid} eq $kid) {
+        $found = $_;
+        last;
+      }
     }
+  }
+  else {
+    #FORMAT: { hexadec1 => "----BEGIN CERTIFICATE-----...", hexadec2 => "----BEGIN CERTIFICATE-----..." }
+    #e.g. https://www.googleapis.com/oauth2/v1/certs
+    return \$kid_keys->{$kid} if $kid_keys->{$kid} && !ref $kid_keys->{$kid};
   }
   return undef if !$found;
   return $found if $found->{kty} eq 'oct' && $alg =~ /^(HS|dir|PBES2-HS|A)/;
@@ -789,7 +796,7 @@ The value depends on the C<alg> token header value.
  PS256               public RSA key, see RS256
  PS384               public RSA key, see RS256
  PS512               public RSA key, see RS256
- ES256               public ECC key, perl HASH ref with JWK key structure, 
+ ES256               public ECC key, perl HASH ref with JWK key structure,
                      a reference to SCALAR string with PEM or DER or JSON/JWK data,
                      an instance of Crypt::PK::ECC
  ES384               public ECC key, see ES256
@@ -844,9 +851,9 @@ Examples with RSA keys:
  02p+d5g4OChfFNDhDtnIqjvY
  -----END PRIVATE KEY-----
  EOF
- 
+
  my $jwk_key_json_string = '{"kty":"RSA","n":"0vx7agoebG...L6tSoc_BJECP","e":"AQAB"}';
- 
+
  #a reference to SCALAR string with PEM or DER or JSON/JWK data,
  my $data = decode_jwt(token=>$t, key=>\$pem_key_string);
  my $data = decode_jwt(token=>$t, key=>\$der_key_string);
@@ -889,9 +896,9 @@ Examples with ECC keys:
  lBQ9T/RsLLc+PmpB1+7yPAR+oR5gZn3kJQ==
  -----END EC PRIVATE KEY-----
  EOF
- 
+
  my $jwk_key_json_string = '{"kty":"EC","crv":"P-256","x":"MKB..7D4","y":"4Et..FyM"}';
- 
+
  #a reference to SCALAR string with PEM or DER or JSON/JWK data,
  my $data = decode_jwt(token=>$t, key=>\$pem_key_string);
  my $data = decode_jwt(token=>$t, key=>\$der_key_string);
@@ -1143,7 +1150,7 @@ A key used for token encryption (JWE) or token signing (JWS). The value depends 
  HS256               string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
  HS384               dtto
  HS512               dtto
- RS256               private RSA key, perl HASH ref with JWK key structure, 
+ RS256               private RSA key, perl HASH ref with JWK key structure,
                      a reference to SCALAR string with PEM or DER or JSON/JWK data,
                      object: Crypt::PK::RSA, Crypt::OpenSSL::RSA, Crypt::X509 or Crypt::OpenSSL::X509
  RS384               private RSA key, see RS256
@@ -1151,7 +1158,7 @@ A key used for token encryption (JWE) or token signing (JWS). The value depends 
  PS256               private RSA key, see RS256
  PS384               private RSA key, see RS256
  PS512               private RSA key, see RS256
- ES256               private ECC key, perl HASH ref with JWK key structure, 
+ ES256               private ECC key, perl HASH ref with JWK key structure,
                      a reference to SCALAR string with PEM or DER or JSON/JWK data,
                      an instance of Crypt::PK::ECC
  ES384               private ECC key, see ES256
@@ -1169,12 +1176,12 @@ A key used for token encryption (JWE) or token signing (JWS). The value depends 
  PBES2-HS256+A128KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
  PBES2-HS384+A192KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
  PBES2-HS512+A256KW  string (raw octects) of any length (or perl HASH ref with JWK, kty=>'oct')
- RSA-OAEP            public RSA key, perl HASH ref with JWK key structure, 
+ RSA-OAEP            public RSA key, perl HASH ref with JWK key structure,
                      a reference to SCALAR string with PEM or DER or JSON/JWK data,
                      an instance of Crypt::PK::RSA or Crypt::OpenSSL::RSA
  RSA-OAEP-256        public RSA key, see RSA-OAEP
  RSA1_5              public RSA key, see RSA-OAEP
- ECDH-ES             public ECC key, perl HASH ref with JWK key structure, 
+ ECDH-ES             public ECC key, perl HASH ref with JWK key structure,
                      a reference to SCALAR string with PEM or DER or JSON/JWK data,
                      an instance of Crypt::PK::ECC
  ECDH-ES+A128KW      public ECC key, see ECDH-ES
