@@ -3,7 +3,7 @@ package Crypt::JWT;
 use strict;
 use warnings;
 
-our $VERSION = '0.019';
+our $VERSION = '0.020';
 
 use Exporter 'import';
 our %EXPORT_TAGS = ( all => [qw(decode_jwt encode_jwt)] );
@@ -76,7 +76,7 @@ sub _prepare_oct_key {
 
 sub _kid_lookup {
   my ($kid, $kid_keys, $alg) = @_;
-  $kid_keys = decode_json($kid_keys) unless ref $kid_keys;
+  $kid_keys = eval { decode_json($kid_keys) } unless ref $kid_keys;
   return undef unless ref $kid_keys eq 'HASH';
   my $found;
   if (exists $kid_keys->{keys} && ref $kid_keys->{keys} eq 'ARRAY') {
@@ -105,7 +105,8 @@ sub _b64u_to_hash {
   return undef unless $b64url;
   my $json = decode_b64u($b64url);
   return undef unless $json;
-  my $hash = decode_json($json);
+  my $hash = eval { decode_json($json) };
+  return undef unless ref $hash eq 'HASH';
   return $hash;
 }
 
@@ -457,6 +458,11 @@ sub _decode_jwe {
   my $ct     = decode_b64u($b64u_ct);
   my $iv     = decode_b64u($b64u_iv);
   my $tag    = decode_b64u($b64u_tag);
+  croak "JWE: invalid header part" if $b64u_header && !$header;
+  croak "JWE: invalid ecek part"   if $b64u_ecek   && !$ecek;
+  croak "JWE: invalid ct part"     if $b64u_ct     && !$ct;
+  croak "JWE: invalid iv part"     if $b64u_iv     && !$iv;
+  croak "JWE: invalid tag part"    if $b64u_tag    && !$tag;
 
   my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
   if ($header->{kid} && $args{kid_keys}) {
@@ -522,6 +528,7 @@ sub _sign_jws {
 sub _verify_jws {
   my ($b64u_header, $b64u_payload, $b64u_sig, $alg, $key) = @_;
   my $sig = decode_b64u($b64u_sig);
+  croak "JWS: invalid sig part" if $b64u_sig && !$sig;
   my $data = "$b64u_header.$b64u_payload";
 
   if ($alg eq 'none' ) { # no integrity
@@ -581,6 +588,7 @@ sub _encode_jws {
 sub _decode_jws {
   my ($b64u_header, $b64u_payload, $b64u_sig, $unprotected_header, %args) = @_;
   my $header = _b64u_to_hash($b64u_header);
+  croak "JWS: invalid header part" if $b64u_header && !$header;
   $unprotected_header = {} if ref $unprotected_header ne 'HASH';
 
   if (!$args{ignore_signature}) {
@@ -609,6 +617,7 @@ sub _decode_jws {
     croak "JWS: decode failed" if !$valid;
   }
   my $payload = decode_b64u($b64u_payload);
+  croak "JWS: invalid payload part" if $b64u_payload && !$payload;
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
   $payload = _payload_dec($payload, $args{decode_payload});
   _verify_claims($payload, %args) if ref $payload eq 'HASH'; # croaks on error
