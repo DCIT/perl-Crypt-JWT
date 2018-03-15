@@ -137,7 +137,7 @@ sub _verify_claims {
   ### exp
   if(defined $payload->{exp}) {
     if (!defined $args{verify_exp} || $args{verify_exp}==1) {
-      croak "JWT: exp claim check failed ($payload->{exp}/$leeway vs. $now)" if $payload->{exp} + $leeway < $now;
+      croak "JWT: exp claim check failed ($payload->{exp}/$leeway vs. $now)" if $payload->{exp} + $leeway <= $now;
     }
   }
   elsif ($args{verify_exp} && $args{verify_exp}==1) {
