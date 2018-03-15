@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.021   2018/03/15
+        - fix #13 off-by-one in exp verification
+
 0.020   2018/02/02
         - improved diagnostics
 
