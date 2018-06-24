@@ -3,7 +3,7 @@ package Crypt::JWT;
 use strict;
 use warnings;
 
-our $VERSION = '0.021';
+our $VERSION = '0.022';
 
 use Exporter 'import';
 our %EXPORT_TAGS = ( all => [qw(decode_jwt encode_jwt)] );
@@ -362,7 +362,7 @@ sub _encrypt_jwe_payload {
     my $len1 = $1/8;
     my $len2 = length($cek);
     croak "JWE: wrong AES key length ($len1 vs. $len2) for $enc" unless $len1 == $len2;
-    my $iv = random_bytes(16); # for AES always 16
+    my $iv = random_bytes(12); # for AESGCM always 12 (96 bits)
     my ($ct, $tag) = gcm_encrypt_authenticate('AES', $cek, $iv, $aad, $payload);
     return ($ct, $iv, $tag);
   }
