@@ -917,7 +917,7 @@ Examples with ECC keys:
  my $data = decode_jwt(token=>$t, key=>Crypt::PK::ECC->new('keyfile.pem'));
  my $data = decode_jwt(token=>$t, key=>Crypt::PK::ECC->new(\$pem_key_string));
 
- #perl HASH ref with JWK structure (key type 'RSA')
+ #perl HASH ref with JWK structure (key type 'EC')
  my $ecc_priv = {
    kty => "EC",
    crv => "P-256",
