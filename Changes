@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.022   2018/06/24
+        - fix AESGCM IV size as required by RFC (in encrypt_jwe_payload)
+
 0.021   2018/03/15
         - fix #13 off-by-one in exp verification
 
