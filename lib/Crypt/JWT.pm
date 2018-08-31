@@ -472,20 +472,20 @@ sub _decode_jwe {
 
   my $aa = $args{accepted_alg};
   if (ref($aa) eq 'Regexp') {
-    croak "JWT: alg '$header->{alg}' does not match accepted_alg" if $header->{alg} !~ $aa;
+    croak "JWE: alg '$header->{alg}' does not match accepted_alg" if $header->{alg} !~ $aa;
   }
   elsif ($aa && (ref($aa) eq 'ARRAY' || !ref($aa))) {
     my %acca = ref $aa ? map { $_ => 1 } @$aa : ( $aa => 1 );
-    croak "JWT: alg '$header->{alg}' not in accepted_alg" if !$acca{$header->{alg}};
+    croak "JWE: alg '$header->{alg}' not in accepted_alg" if !$acca{$header->{alg}};
   }
 
   my $ae = $args{accepted_enc};
   if (ref($ae) eq 'Regexp') {
-    croak "JWT: enc '$header->{enc}' does not match accepted_enc" if $header->{enc} !~ $ae;
+    croak "JWE: enc '$header->{enc}' does not match accepted_enc" if $header->{enc} !~ $ae;
   }
   elsif ($ae && (ref($ae) eq 'ARRAY' || !ref($ae))) {
     my %acce = ref $ae ? map { $_ => 1 } @$ae : ( $ae => 1 );
-    croak "JWT: enc '$header->{enc}' not in accepted_enc" if !$acce{$header->{enc}};
+    croak "JWE: enc '$header->{enc}' not in accepted_enc" if !$acce{$header->{enc}};
   }
 
   croak "JWE: missing 'key'" if !$key;
@@ -594,11 +594,11 @@ sub _decode_jws {
   if (!$args{ignore_signature}) {
     my $aa = $args{accepted_alg};
     if (ref($aa) eq 'Regexp') {
-      croak "JWT: alg '$header->{alg}' does not match accepted_alg" if $header->{alg} !~ $aa;
+      croak "JWS: alg '$header->{alg}' does not match accepted_alg" if $header->{alg} !~ $aa;
     }
     elsif ($aa && (ref($aa) eq 'ARRAY' || !ref($aa))) {
       my %acca = ref $aa ? map { $_ => 1 } @$aa : ( $aa => 1 );
-      croak "JWT: alg '$header->{alg}' not in accepted_alg" if !$acca{$header->{alg}};
+      croak "JWS: alg '$header->{alg}' not in accepted_alg" if !$acca{$header->{alg}};
     }
     my $alg = $header->{alg};
     croak "JWS: missing header 'alg'" unless $alg;
