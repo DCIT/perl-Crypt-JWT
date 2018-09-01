@@ -1,7 +1,12 @@
 Changes for Crypt-JWT distribution
 
-0.023   2018/09/XX
-        - XX
+0.023   2018/09/01
+        - SECURITY FIX: related to JWS signature validation
+          issue reported by Jeremy Choi (CVE later)
+        - (JWS) using a key from 'jwk' header requires to explicitly set
+          'key_from_jwk_header => 1' and works only for RSA/ECDSA public keys
+        - (JWS+JWE) when 'kid_keys' specified it croaks if header does not
+          contain 'kid' value or if 'kid' was not found in 'kid_keys'
 
 0.022   2018/06/24
         - fix AESGCM IV size as required by RFC (in encrypt_jwe_payload)
@@ -14,7 +19,7 @@ Changes for Crypt-JWT distribution
 
 0.019   2018/01/26
         - fix #11 kid keys
-        - fix #9  Support for Java lib that pads base64 encoding 
+        - fix #9  Support for Java lib that pads base64 encoding
 
 0.018   2016/08/31
         - doc fixes
