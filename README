@@ -217,9 +217,26 @@ FUNCTIONS
           my $google_certs = get('https://www.googleapis.com/oauth2/v1/certs');
           my $payload = decode_jwt(token => $t, kid_keys => $google_certs);
 
-        When the token header contains 'kid' item the corresponding key is
+        When the token header contains "kid" item the corresponding key is
         looked up in "kid_keys" list and used for token decoding (you do not
         need to pass the explicit key via "key" parameter).
+
+        CHANGED in 0.23: When "kid_keys" is specified it croaks if token
+        header does not contain "kid" value or if "kid" was not found in
+        "kid_keys".
+
+    key_from_jwk_header
+        ADDED in 0.23
+
+        1 - use "jwk" header value for validating JWS signature if neither
+        "key" nor "kid_keys" specified, BEWARE: DANGEROUS, UNSECURE!!!
+
+        0 (default) - ignore "jwk" header value when validating JWS
+        signature
+
+        Keep in mind that enabling "key_from_jwk_header" requires "jwk"
+        header to exist and be an valid RSA/ECDSA public key (otherwise it
+        croaks).
 
     allow_none
         1 - accept JWS tokens with "none" 'alg' header value (which means

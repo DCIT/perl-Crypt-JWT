@@ -76,8 +76,9 @@ sub _prepare_oct_key {
 
 sub _kid_lookup {
   my ($kid, $kid_keys, $alg) = @_;
-  $kid_keys = eval { decode_json($kid_keys) } unless ref $kid_keys;
-  return undef unless ref $kid_keys eq 'HASH';
+  return undef if !defined $kid || !defined $alg;
+  $kid_keys = eval { decode_json($kid_keys) } if $kid_keys && !ref $kid_keys;
+  croak "JWT: kid_keys must be a HASHREF or a valid JSON/HASH" if ref $kid_keys ne 'HASH';
   my $found;
   if (exists $kid_keys->{keys} && ref $kid_keys->{keys} eq 'ARRAY') {
     #FORMAT: { keys => [ {kid=>'A', kty=>?, ...}, {kid=>'B', kty=>?, ...} ] }
@@ -430,7 +431,6 @@ sub _encode_jwe {
   # prepare header
   $header->{alg} = $alg;
   $header->{enc} = $enc;
-  #REMOVED: $header->{typ} = 'JWT' if !exists $header->{typ} && $args{auto_typ};
   # key
   croak "JWE: missing 'key'" if !$args{key};
   my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
@@ -464,11 +464,18 @@ sub _decode_jwe {
   croak "JWE: invalid iv part"     if $b64u_iv     && !$iv;
   croak "JWE: invalid tag part"    if $b64u_tag    && !$tag;
 
-  my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
-  if ($header->{kid} && $args{kid_keys}) {
-    my $k = _kid_lookup($header->{kid}, $args{kid_keys}, $header->{alg});
-    $key = $k if defined $k;
+  my $key;
+  if (exists $args{key}) {
+    $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
   }
+  elsif (exists $args{kid_keys}) {
+    # BEWARE: stricter approach since 0.23
+    # when 'kid_keys' specified it croaks if header doesn't contain 'kid' value or if 'kid' wasn't found in 'kid_keys'
+    my $k = _kid_lookup($header->{kid}, $args{kid_keys}, $header->{alg});
+    croak "JWE: kid_keys lookup failed" if !defined $k;
+    $key = $k;
+  }
+  croak "JWE: missing key" if !defined $key;
 
   my $aa = $args{accepted_alg};
   if (ref($aa) eq 'Regexp') {
@@ -488,7 +495,6 @@ sub _decode_jwe {
     croak "JWE: enc '$header->{enc}' not in accepted_enc" if !$acce{$header->{enc}};
   }
 
-  croak "JWE: missing 'key'" if !$key;
   $header = { %$shared_unprotected, %$unprotected, %$header }; # merge headers
   my $cek = _decrypt_jwe_cek($ecek, $key, $header);
   my $aad = defined $b64u_aad ? "$b64u_header.$b64u_aad" : $b64u_header;
@@ -573,7 +579,6 @@ sub _encode_jws {
   my $b64u_payload = encode_b64u($payload);
   # prepare header
   $header->{alg} = $alg;
-  #REMOVED: $header->{typ} = 'JWT' if !exists $header->{typ} && $args{auto_typ};
   # encode header
   my $json_header = encode_json($header);
   my $b64u_header = encode_b64u($json_header);
@@ -592,29 +597,51 @@ sub _decode_jws {
   $unprotected_header = {} if ref $unprotected_header ne 'HASH';
 
   if (!$args{ignore_signature}) {
-    my $aa = $args{accepted_alg};
-    if (ref($aa) eq 'Regexp') {
-      croak "JWS: alg '$header->{alg}' does not match accepted_alg" if $header->{alg} !~ $aa;
-    }
-    elsif ($aa && (ref($aa) eq 'ARRAY' || !ref($aa))) {
-      my %acca = ref $aa ? map { $_ => 1 } @$aa : ( $aa => 1 );
-      croak "JWS: alg '$header->{alg}' not in accepted_alg" if !$acca{$header->{alg}};
-    }
     my $alg = $header->{alg};
     croak "JWS: missing header 'alg'" unless $alg;
     croak "JWS: alg 'none' not allowed" if $alg eq 'none' && !$args{allow_none};
-    # key
-    my $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
-    my $kid = exists $header->{kid} ? $header->{kid} : $unprotected_header->{kid};
-    if (!defined $key && defined $kid && $args{kid_keys}) {
-      my $k = _kid_lookup($kid, $args{kid_keys}, $alg);
-      $key = $k if defined $k;
+    croak "JWS: alg 'none' expects no signature" if $alg eq 'none' && defined $b64u_sig && length($b64u_sig) > 0;
+
+    my $aa = $args{accepted_alg};
+    if (ref $aa eq 'Regexp') {
+      croak "JWS: alg '$alg' does not match accepted_alg" if $alg !~ $aa;
     }
-    # if no key given, try to use 'jwk' value from header
-    $key = $header->{jwk} if !$key && $header->{jwk};
-    croak "JWS: missing 'key'" if !$key && $alg ne 'none';
-    my $valid = _verify_jws($b64u_header, $b64u_payload, $b64u_sig, $alg, $key);
-    croak "JWS: decode failed" if !$valid;
+    elsif (ref $aa eq 'ARRAY') {
+      my %acca = map { $_ => 1 } @$aa;
+      croak "JWS: alg '$alg' not in accepted_alg" if !$acca{$alg};
+    }
+    elsif (defined $aa) {
+      croak "JWS: alg '$alg' not accepted_alg" if $aa ne $alg;
+    }
+
+    if ($alg ne 'none') {
+      my $key;
+      if (exists $args{key}) {
+        $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
+      }
+      elsif (exists $args{kid_keys}) {
+        # BEWARE: stricter approach since 0.23
+        # when 'kid_keys' specified it croaks if header doesn't contain 'kid' value or if 'kid' wasn't found in 'kid_keys'
+        my $kid = exists $header->{kid} ? $header->{kid} : $unprotected_header->{kid};
+        my $k = _kid_lookup($kid, $args{kid_keys}, $alg);
+        croak "JWS: kid_keys lookup failed" if !defined $k;
+        $key = $k;
+      }
+      elsif ($args{key_from_jwk_header}) {
+        # BEWARE: stricter approach since 0.23
+        # - header 'jwk' is by default ignored (unless given: key_from_jwk_header => 1)
+        # - only RSA/ECDSA public keys are accepted
+        my $k = $header->{jwk};
+        croak "JWS: jwk header does not contain a key" if !defined $k || ref($k) ne 'HASH' || !defined $k->{kty};
+        croak "JWS: jwk header allowed only for RSA/ECDSA" if $alg !~ /^(RS|PS|ES)/ || $k->{kty} !~ /^(RSA|EC)$/;
+        croak "JWS: jwk header must be a public key" if $k->{d} || $k->{p} || $k->{q} || $k->{dp} || $k->{dq} || $k->{qi};
+        $key = $k;
+      }
+      croak "JWS: missing key" if !defined $key;
+
+      my $valid = _verify_jws($b64u_header, $b64u_payload, $b64u_sig, $alg, $key);
+      croak "JWS: invalid signature" if !$valid;
+    }
   }
   my $payload = decode_b64u($b64u_payload);
   croak "JWS: invalid payload part" if $b64u_payload && !$payload;
@@ -949,8 +976,21 @@ Since 0.19 we also support:
   my $google_certs = get('https://www.googleapis.com/oauth2/v1/certs');
   my $payload = decode_jwt(token => $t, kid_keys => $google_certs);
 
-When the token header contains 'kid' item the corresponding key is looked up in C<kid_keys> list and used for token
+When the token header contains C<kid> item the corresponding key is looked up in C<kid_keys> list and used for token
 decoding (you do not need to pass the explicit key via C<key> parameter).
+
+B<CHANGED in 0.23:> When C<kid_keys> is specified it croaks if token header does not contain C<kid> value or
+if C<kid> was not found in C<kid_keys>.
+
+=item key_from_jwk_header
+
+B<ADDED in 0.23>
+
+C<1> - use C<jwk> header value for validating JWS signature if neither C<key> nor C<kid_keys> specified, B<BEWARE: DANGEROUS, UNSECURE!!!>
+
+C<0> (default) - ignore C<jwk> header value when validating JWS signature
+
+Keep in mind that enabling C<key_from_jwk_header> requires C<jwk> header to exist and be an valid RSA/ECDSA public key (otherwise it croaks).
 
 =item allow_none
 
