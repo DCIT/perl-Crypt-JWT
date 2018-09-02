@@ -815,7 +815,6 @@ Mandatory argument, a string with either JWS or JWE JSON Web Token.
 =item key
 
 A key used for token decryption (JWE) or token signature validation (JWS).
-If not given, and the token header contains a C<jwk> header value, that value will be used.
 The value depends on the C<alg> token header value.
 
  JWS alg header      key value
@@ -862,10 +861,10 @@ The value depends on the C<alg> token header value.
  ECDH-ES+A192KW      private ECC key, see ECDH-ES
  ECDH-ES+A256KW      private ECC key, see ECDH-ES
 
-Example with key from C<jwk> token header:
+Example using the key from C<jwk> token header:
 
- my $data = decode_jwt(token=>$t);
- my ($header, $data) = decode_jwt(token=>$t, decode_header=>1);
+ my $data = decode_jwt(token=>$t, key_from_jwk_header=>1);
+ my ($header, $data) = decode_jwt(token=>$t, decode_header=>1, key_from_jwk_header=>1);
 
 Examples with raw octet keys:
 
@@ -970,7 +969,14 @@ This parametes can be either a JWK Set JSON string (see RFC7517) or a perl HASH 
   };
   my $payload = decode_jwt(token=>$t, kid_keys=>$keylist);
 
-Since 0.19 we also support:
+The structure described above is used e.g. by L<https://www.googleapis.com/oauth2/v2/certs>
+
+  use Mojo::UserAgent;
+  my $ua = Mojo::UserAgent->new;
+  my $google_keys => $ua->get('https://www.googleapis.com/oauth2/v2/certs')->result->json;
+  my $payload = decode_jwt(token => $t, kid_keys => $google_keys);
+
+B<SINCE 0.19> we also support alternative structure used e.g. by L<https://www.googleapis.com/oauth2/v1/certs>:
 
   use LWP::Simple;
   my $google_certs = get('https://www.googleapis.com/oauth2/v1/certs');
@@ -984,7 +990,7 @@ if C<kid> was not found in C<kid_keys>.
 
 =item key_from_jwk_header
 
-B<ADDED in 0.23>
+B<SINCE 0.23>
 
 C<1> - use C<jwk> header value for validating JWS signature if neither C<key> nor C<kid_keys> specified, B<BEWARE: DANGEROUS, UNSECURE!!!>
 

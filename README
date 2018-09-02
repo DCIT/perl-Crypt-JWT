@@ -54,9 +54,7 @@ FUNCTIONS
          my $data = decode_jwt(token=>$t, key=>$k);
 
     key A key used for token decryption (JWE) or token signature validation
-        (JWS). If not given, and the token header contains a "jwk" header
-        value, that value will be used. The value depends on the "alg" token
-        header value.
+        (JWS). The value depends on the "alg" token header value.
 
          JWS alg header      key value
          ------------------  ----------------------------------
@@ -102,10 +100,10 @@ FUNCTIONS
          ECDH-ES+A192KW      private ECC key, see ECDH-ES
          ECDH-ES+A256KW      private ECC key, see ECDH-ES
 
-        Example with key from "jwk" token header:
+        Example using the key from "jwk" token header:
 
-         my $data = decode_jwt(token=>$t);
-         my ($header, $data) = decode_jwt(token=>$t, decode_header=>1);
+         my $data = decode_jwt(token=>$t, key_from_jwk_header=>1);
+         my ($header, $data) = decode_jwt(token=>$t, decode_header=>1, key_from_jwk_header=>1);
 
         Examples with raw octet keys:
 
@@ -211,7 +209,16 @@ FUNCTIONS
           };
           my $payload = decode_jwt(token=>$t, kid_keys=>$keylist);
 
-        Since 0.19 we also support:
+        The structure described above is used e.g. by
+        <https://www.googleapis.com/oauth2/v2/certs>
+
+          use Mojo::UserAgent;
+          my $ua = Mojo::UserAgent->new;
+          my $google_keys => $ua->get('https://www.googleapis.com/oauth2/v2/certs')->result->json;
+          my $payload = decode_jwt(token => $t, kid_keys => $google_keys);
+
+        SINCE 0.19 we also support alternative structure used e.g. by
+        <https://www.googleapis.com/oauth2/v1/certs>:
 
           use LWP::Simple;
           my $google_certs = get('https://www.googleapis.com/oauth2/v1/certs');
@@ -226,7 +233,7 @@ FUNCTIONS
         "kid_keys".
 
     key_from_jwk_header
-        ADDED in 0.23
+        SINCE 0.23
 
         1 - use "jwk" header value for validating JWS signature if neither
         "key" nor "kid_keys" specified, BEWARE: DANGEROUS, UNSECURE!!!
