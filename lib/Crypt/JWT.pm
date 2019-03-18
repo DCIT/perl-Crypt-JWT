@@ -168,43 +168,63 @@ sub _verify_claims {
   }
 
   ### iss
-  if(exists $payload->{iss}) {
-    if (ref $args{verify_iss} eq 'Regexp') {
-      croak "JWT: iss claim re check failed" unless $payload->{iss} =~ $args{verify_iss};
-    }
-    elsif (ref $args{verify_iss} eq 'CODE') {
-      croak "JWT: iss claim check failed" unless $args{verify_iss}->($payload->{iss});
-    }
+  if (exists $args{verify_iss}) {
+      if (exists $payload->{iss}) {
+          if (ref $args{verify_iss} eq 'Regexp') {
+              croak "JWT: iss claim re check failed" unless $payload->{iss} =~ $args{verify_iss};
+          }
+          elsif (ref $args{verify_iss} eq 'CODE') {
+              croak "JWT: iss claim check failed" unless $args{verify_iss}->($payload->{iss});
+          }
+      }
+      elsif ($args{verify_iss}) {
+          croak "JWT: iss claim required but missing"
+      }
   }
 
   ### sub
-  if(exists $payload->{sub}) {
-    if (ref $args{verify_sub} eq 'Regexp') {
-      croak "JWT: sub claim re check failed" unless $payload->{sub} =~ $args{verify_sub};
-    }
-    elsif (ref $args{verify_sub} eq 'CODE') {
-      croak "JWT: sub claim check failed" unless $args{verify_sub}->($payload->{sub});
-    }
+  if (exists $args{verify_sub}) {
+      if (exists $payload->{sub}) {
+          if (ref $args{verify_sub} eq 'Regexp') {
+              croak "JWT: sub claim re check failed" unless $payload->{sub} =~ $args{verify_sub};
+          }
+          elsif (ref $args{verify_sub} eq 'CODE') {
+              croak "JWT: sub claim check failed" unless $args{verify_sub}->($payload->{sub});
+          }
+      }
+      elsif ($args{verify_sub}) {
+          croak "JWT: sub claim required but missing"
+      }
   }
 
   ### aud
-  if(exists $payload->{aud}) {
-    if (ref $args{verify_aud} eq 'Regexp') {
-      croak "JWT: aud claim re check failed" unless $payload->{aud} =~ $args{verify_aud};
-    }
-    elsif (ref $args{verify_aud} eq 'CODE') {
-      croak "JWT: aud claim check failed" unless $args{verify_aud}->($payload->{aud});
-    }
+  if (exists $args{verify_aud}) {
+      if (exists $payload->{aud}) {
+          if (ref $args{verify_aud} eq 'Regexp') {
+              croak "JWT: aud claim re check failed" unless $payload->{aud} =~ $args{verify_aud};
+          }
+          elsif (ref $args{verify_aud} eq 'CODE') {
+              croak "JWT: aud claim check failed" unless $args{verify_aud}->($payload->{aud});
+          }
+      }
+      elsif ($args{verify_aud}) {
+          croak "JWT: aud claim required but missing"
+      }
   }
 
   ### jti
-  if(exists $payload->{jti}) {
-    if (ref $args{verify_jti} eq 'Regexp') {
-      croak "JWT: jti claim re check failed" unless $payload->{jti} =~ $args{verify_jti};
-    }
-    elsif (ref $args{verify_jti} eq 'CODE') {
-      croak "JWT: jti claim check failed" unless $args{verify_jti}->($payload->{jti});
-    }
+  if (exists $args{verify_jti}) {
+      if (exists $payload->{jti}) {
+          if (ref $args{verify_jti} eq 'Regexp') {
+              croak "JWT: jti claim re check failed" unless $payload->{jti} =~ $args{verify_jti};
+          }
+          elsif (ref $args{verify_jti} eq 'CODE') {
+              croak "JWT: jti claim check failed" unless $args{verify_jti}->($payload->{jti});
+          }
+      }
+      elsif ($args{verify_jti}) {
+          croak "JWT: jti claim required but missing"
+      }
   }
 }
 
