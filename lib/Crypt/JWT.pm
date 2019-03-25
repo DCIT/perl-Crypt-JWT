@@ -1094,6 +1094,9 @@ C<1> - return decoded header as a return value of decode_jwt()
 
 =item verify_iss
 
+B<INCOMPATIBLE CHANGE in v0.24> - if C<verify_iss> is specified and
+claim C<iss> is completely missing it is a failure since v0.24
+
 C<CODE ref> - subroutine (with 'iss' claim value passed as argument) should return C<true> otherwise verification fails
 
 C<Regexp ref> - 'iss' claim value has to match given regexp otherwise verification fails
@@ -1101,6 +1104,9 @@ C<Regexp ref> - 'iss' claim value has to match given regexp otherwise verificati
 C<undef> (default) - do not verify 'iss' claim
 
 =item verify_aud
+
+B<INCOMPATIBLE CHANGE in v0.24> - if C<verify_aud> is specified and
+claim C<aud> is completely missing it is a failure since v0.24
 
 C<CODE ref> - subroutine (with 'aud' claim value passed as argument) should return C<true> otherwise verification fails
 
@@ -1110,6 +1116,9 @@ C<undef> (default) - do not verify 'aud' claim
 
 =item verify_sub
 
+B<INCOMPATIBLE CHANGE in v0.24> - if C<verify_sub> is specified and
+claim C<sub> is completely missing it is a failure since v0.24
+
 C<CODE ref> - subroutine (with 'sub' claim value passed as argument) should return C<true> otherwise verification fails
 
 C<Regexp ref> - 'sub' claim value has to match given regexp otherwise verification fails
@@ -1117,6 +1126,9 @@ C<Regexp ref> - 'sub' claim value has to match given regexp otherwise verificati
 C<undef> (default) - do not verify 'sub' claim
 
 =item verify_jti
+
+B<INCOMPATIBLE CHANGE in v0.24> - if C<verify_jti> is specified and
+claim C<jti> is completely missing it is a failure since v0.24
 
 C<CODE ref> - subroutine (with 'jti' claim value passed as argument) should return C<true> otherwise verification fails
 
