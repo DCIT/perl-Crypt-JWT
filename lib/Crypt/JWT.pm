@@ -501,7 +501,7 @@ sub _decode_jwe {
     $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
   }
   elsif (exists $args{kid_keys}) {
-    # BEWARE: stricter approach since 0.23
+    # BEWARE: stricter approach since 0.023
     # when 'kid_keys' specified it croaks if header doesn't contain 'kid' value or if 'kid' wasn't found in 'kid_keys'
     my $k = _kid_lookup($header->{kid}, $args{kid_keys}, $header->{alg});
     croak "JWE: kid_keys lookup failed" if !defined $k;
@@ -652,7 +652,7 @@ sub _decode_jws {
         $key = defined $args{keypass} ? [$args{key}, $args{keypass}] : $args{key};
       }
       elsif (exists $args{kid_keys}) {
-        # BEWARE: stricter approach since 0.23
+        # BEWARE: stricter approach since 0.023
         # when 'kid_keys' specified it croaks if header doesn't contain 'kid' value or if 'kid' wasn't found in 'kid_keys'
         my $kid = exists $header->{kid} ? $header->{kid} : $unprotected_header->{kid};
         my $k = _kid_lookup($kid, $args{kid_keys}, $alg);
@@ -660,7 +660,7 @@ sub _decode_jws {
         $key = $k;
       }
       elsif ($args{key_from_jwk_header}) {
-        # BEWARE: stricter approach since 0.23
+        # BEWARE: stricter approach since 0.023
         # - header 'jwk' is by default ignored (unless given: key_from_jwk_header => 1)
         # - only RSA/ECDSA public keys are accepted
         my $k = $header->{jwk};
@@ -1008,7 +1008,7 @@ The structure described above is used e.g. by L<https://www.googleapis.com/oauth
   my $google_keys => $ua->get('https://www.googleapis.com/oauth2/v2/certs')->result->json;
   my $payload = decode_jwt(token => $t, kid_keys => $google_keys);
 
-B<SINCE 0.19> we also support alternative structure used e.g. by L<https://www.googleapis.com/oauth2/v1/certs>:
+B<SINCE 0.019> we also support alternative structure used e.g. by L<https://www.googleapis.com/oauth2/v1/certs>:
 
   use LWP::Simple;
   my $google_certs = get('https://www.googleapis.com/oauth2/v1/certs');
@@ -1017,12 +1017,12 @@ B<SINCE 0.19> we also support alternative structure used e.g. by L<https://www.g
 When the token header contains C<kid> item the corresponding key is looked up in C<kid_keys> list and used for token
 decoding (you do not need to pass the explicit key via C<key> parameter).
 
-B<CHANGED in 0.23:> When C<kid_keys> is specified it croaks if token header does not contain C<kid> value or
+B<INCOMPATIBLE CHANGE in 0.023:> When C<kid_keys> is specified it croaks if token header does not contain C<kid> value or
 if C<kid> was not found in C<kid_keys>.
 
 =item key_from_jwk_header
 
-B<SINCE 0.23>
+B<SINCE 0.023>
 
 C<1> - use C<jwk> header value for validating JWS signature if neither C<key> nor C<kid_keys> specified, B<BEWARE: DANGEROUS, UNSECURE!!!>
 
@@ -1094,8 +1094,8 @@ C<1> - return decoded header as a return value of decode_jwt()
 
 =item verify_iss
 
-B<INCOMPATIBLE CHANGE in v0.24> - if C<verify_iss> is specified and
-claim C<iss> is completely missing it is a failure since v0.24
+B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_iss> is specified and
+claim C<iss> (Issuer) is completely missing it is a failure since 0.024
 
 C<CODE ref> - subroutine (with 'iss' claim value passed as argument) should return C<true> otherwise verification fails
 
@@ -1105,8 +1105,8 @@ C<undef> (default) - do not verify 'iss' claim
 
 =item verify_aud
 
-B<INCOMPATIBLE CHANGE in v0.24> - if C<verify_aud> is specified and
-claim C<aud> is completely missing it is a failure since v0.24
+B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_iss> is specified and
+claim C<aud> (Audience) is completely missing it is a failure since 0.024
 
 C<CODE ref> - subroutine (with 'aud' claim value passed as argument) should return C<true> otherwise verification fails
 
@@ -1116,8 +1116,8 @@ C<undef> (default) - do not verify 'aud' claim
 
 =item verify_sub
 
-B<INCOMPATIBLE CHANGE in v0.24> - if C<verify_sub> is specified and
-claim C<sub> is completely missing it is a failure since v0.24
+B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_iss> is specified and
+claim C<sub> (Subject) is completely missing it is a failure since 0.024
 
 C<CODE ref> - subroutine (with 'sub' claim value passed as argument) should return C<true> otherwise verification fails
 
@@ -1127,8 +1127,8 @@ C<undef> (default) - do not verify 'sub' claim
 
 =item verify_jti
 
-B<INCOMPATIBLE CHANGE in v0.24> - if C<verify_jti> is specified and
-claim C<jti> is completely missing it is a failure since v0.24
+B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_iss> is specified and
+claim C<jti> (JWT ID) is completely missing it is a failure since 0.024
 
 C<CODE ref> - subroutine (with 'jti' claim value passed as argument) should return C<true> otherwise verification fails
 

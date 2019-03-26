@@ -1,5 +1,13 @@
 Changes for Crypt-JWT distribution
 
+0.024   2019/03/26
+        - fix #16 - INCOMPATIBLE CHANGE:
+            croak if verify_iss is specified and claim iss is completely missing
+            croak if verify_aud is specified and claim aud is completely missing
+            croak if verify_sub is specified and claim sub is completely missing
+            croak if verify_jti is specified and claim jti is completely missing
+        - documentation fixes
+
 0.023   2018/09/01
         - SECURITY FIX: related to JWS signature validation
           issue reported by Jeremy Choi (CVE later)
