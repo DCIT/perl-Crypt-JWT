@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.025   2019-XX-XX
+        - ?
+
 0.024   2019-03-26
         - fix #16 - INCOMPATIBLE CHANGES
           * croak if verify_iss is specified and claim iss is missing
