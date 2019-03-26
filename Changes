@@ -2,10 +2,10 @@ Changes for Crypt-JWT distribution
 
 0.024   2019-03-26
         - fix #16 - INCOMPATIBLE CHANGES
-            croak if verify_iss is specified and claim iss is missing
-            croak if verify_aud is specified and claim aud is missing
-            croak if verify_sub is specified and claim sub is missing
-            croak if verify_jti is specified and claim jti is missing
+          * croak if verify_iss is specified and claim iss is missing
+          * croak if verify_aud is specified and claim aud is missing
+          * croak if verify_sub is specified and claim sub is missing
+          * croak if verify_jti is specified and claim jti is missing
         - documentation fixes
 
 0.023   2018-09-01
