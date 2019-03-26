@@ -1,14 +1,14 @@
 Changes for Crypt-JWT distribution
 
-0.024   2019/03/26
-        - fix #16 - INCOMPATIBLE CHANGE:
-            croak if verify_iss is specified and claim iss is completely missing
-            croak if verify_aud is specified and claim aud is completely missing
-            croak if verify_sub is specified and claim sub is completely missing
-            croak if verify_jti is specified and claim jti is completely missing
+0.024   2019-03-26
+        - fix #16 - INCOMPATIBLE CHANGES:
+            croak if verify_iss is specified and claim iss is missing
+            croak if verify_aud is specified and claim aud is missing
+            croak if verify_sub is specified and claim sub is missing
+            croak if verify_jti is specified and claim jti is missing
         - documentation fixes
 
-0.023   2018/09/01
+0.023   2018-09-01
         - SECURITY FIX: related to JWS signature validation
           issue reported by Jeremy Choi (CVE later)
         - (JWS) using a key from 'jwk' header requires to explicitly set
@@ -16,68 +16,68 @@ Changes for Crypt-JWT distribution
         - (JWS+JWE) when 'kid_keys' specified it croaks if header does not
           contain 'kid' value or if 'kid' was not found in 'kid_keys'
 
-0.022   2018/06/24
+0.022   2018-06-24
         - fix AESGCM IV size as required by RFC (in encrypt_jwe_payload)
 
-0.021   2018/03/15
+0.021   2018-03-15
         - fix #13 off-by-one in exp verification
 
-0.020   2018/02/02
+0.020   2018-02-02
         - improved diagnostics
 
-0.019   2018/01/26
+0.019   2018-01-26
         - fix #11 kid keys
         - fix #9  Support for Java lib that pads base64 encoding
 
-0.018   2016/08/31
+0.018   2016-08-31
         - doc fixes
         - file perms fixes
 
-0.017   2016/06/03
+0.017   2016-06-03
         - doc fixes
 
-0.016   2016/05/12
+0.016   2016-05-12
         - require CryptX-0.034 (jws_no_key.t fails with older versions)
 
-0.015   2016/05/12
+0.015   2016-05-12
         - fix broken test jws_no_key.t
 
-0.014   2016/05/04
+0.014   2016-05-04
         - using Base64 en/decoding routines from CryptX also in tests
 
-0.013   2016/05/03
+0.013   2016-05-03
         - fix misused utf8:stuff
         - fix 5.8.* compatibility
         - using Base64 en/decoding routines from CryptX
 
-0.012   2016/05/02
+0.012   2016-05-02
         - JWS is now able to use the key from jwk header
         - added support for Flattened JSON serialization (for both JWS and JWE)
 
-0.011   2015/10/22
+0.011   2015-10-22
         - switch to JSON::MaybeXS https://github.com/DCIT/perl-Crypt-JWT/pull/1
 
-0.010   2015/07/07
+0.010   2015-07-07
         - INCOMPATIBLE CHANGE: 'key' param of decode_jwt and encode_jwt:
           PEM/DER/JWK-JSON key strings are not passed as scalars but
           as a reference to scalar (see examples in documentation)
         - decode_jwt: kid_keys now strictly checks kty (key type)
 
-0.009   2015/07/04
+0.009   2015-07-04
         - decode_jwt: verify_iat default changed to 0
         - encode_jwt: auto_typ removed
         - improved tests
 
-0.008   2015/07/04
+0.008   2015-07-04
         - decode_jwt: new parameter - ignore_claims
         - fix related to nbf, iat, exp checks
 
-0.007   2015/07/04
+0.007   2015-07-04
         - decode_jwt: new parameter - kid_keys
 
-0.006   2015/07/03
+0.006   2015-07-03
         - after many changes first candidate for stable API
         - incomplete tests
 
-0.001   2015/06/30
+0.001   2015-06-30
         - initial version
