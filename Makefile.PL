@@ -14,6 +14,8 @@ WriteMakefile(
       'Exporter'            => '5.57',     # we need: use Exporter 'import';
       'Compress::Raw::Zlib' => 0,
       'CryptX'              => '0.034',
+      'Scalar::Util'        => 0,
+      'Test::More'          => 0,
     },
     MIN_PERL_VERSION => '5.006',
     META_MERGE       => {
@@ -23,7 +25,8 @@ WriteMakefile(
       },
     },
     dist => {
-      PREOP    => 'pod2text lib/Crypt/JWT.pm > README',
+      #PREOP    => 'pod2text lib/Crypt/JWT.pm > README',
+      PREOP    => 'perldoc -u lib/Crypt/JWT.pm | pod2markdown > README.md',
       TAR      => 'ptar',
       TARFLAGS => '-c -C -f'
       #TARFLAGS => '--owner=0 --group=0 -cvf',
