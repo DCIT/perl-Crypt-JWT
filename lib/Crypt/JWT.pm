@@ -1105,7 +1105,7 @@ C<undef> (default) - do not verify 'iss' claim
 
 =item verify_aud
 
-B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_iss> is specified and
+B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_aud> is specified and
 claim C<aud> (Audience) is completely missing it is a failure since 0.024
 
 C<CODE ref> - subroutine (with 'aud' claim value passed as argument) should return C<true> otherwise verification fails
@@ -1116,7 +1116,7 @@ C<undef> (default) - do not verify 'aud' claim
 
 =item verify_sub
 
-B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_iss> is specified and
+B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_sub> is specified and
 claim C<sub> (Subject) is completely missing it is a failure since 0.024
 
 C<CODE ref> - subroutine (with 'sub' claim value passed as argument) should return C<true> otherwise verification fails
@@ -1127,7 +1127,7 @@ C<undef> (default) - do not verify 'sub' claim
 
 =item verify_jti
 
-B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_iss> is specified and
+B<INCOMPATIBLE CHANGE in 0.024:> If C<verify_jti> is specified and
 claim C<jti> (JWT ID) is completely missing it is a failure since 0.024
 
 C<CODE ref> - subroutine (with 'jti' claim value passed as argument) should return C<true> otherwise verification fails
