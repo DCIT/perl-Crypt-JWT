@@ -160,6 +160,13 @@ for ([qw/PBES2-HS256+A128KW A128GCM/], ['HS512', '']) {
     $decoded = eval { decode_jwt(key=>$k, token=>$token, verify_iss=>qr/string/, verify_aud=>qr/string/, verify_sub=>qr/string/, verify_jti=>qr/BADVAL/) };
     is($decoded, undef, "decoded - claims/11: alg=>'$alg'");
 
+    # check for undef payload values or undef verify args
+    $token = encode_jwt(key=>$k, payload=>{iat=>time, nbf=>time, exp=>time+10, iss=>undef, aud=>undef, sub=>undef, jti=>undef, data=>'Hello'}, alg=>$alg);
+    $decoded = eval { decode_jwt(key=>$k, token=>$token, verify_iss=>qr/string/, verify_aud=>qr/string/, verify_sub=>qr/string/, verify_jti=>qr/BADVAL/) };
+    is($decoded, undef, "decoded - claims_undef/1: alg=>'$alg'");
+    $decoded = decode_jwt(key=>$k, token=>$token, verify_iss=>undef, verify_aud=>undef, verify_sub=>undef, verify_jti=>undef);
+    is($decoded->{data}, 'Hello', "decoded - claims_undef/2: alg=>'$alg'");
+
     # iat
     $token = encode_jwt(key=>$k, payload=>{iat=>time+10, nbf=>time, exp=>time+10, data=>'Hello'}, alg=>$alg);
     $decoded = eval { decode_jwt(key=>$k, token=>$token) };
