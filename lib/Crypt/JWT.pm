@@ -704,7 +704,7 @@ sub decode_jwt {
   }
   elsif ($args{token} =~ /^\s*\{.*?\}\s*$/s) {
     my $hash = decode_json($args{token});
-    if ($hash->{payload} && $hash->{protected}) {
+    if (defined $hash->{payload} && $hash->{protected}) {
       # Flattened JWS JSON Serialization
       ($header, $payload) = _decode_jws($hash->{protected}, $hash->{payload}, $hash->{signature}, $hash->{header}, %args);
     }
