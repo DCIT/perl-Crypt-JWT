@@ -317,7 +317,7 @@ Named arguments:
 
 - verify\_aud
 
-    **INCOMPATIBLE CHANGE in 0.024:** If `verify_iss` is specified and
+    **INCOMPATIBLE CHANGE in 0.024:** If `verify_aud` is specified and
     claim `aud` (Audience) is completely missing it is a failure since 0.024
 
     `CODE ref` - subroutine (with 'aud' claim value passed as argument) should return `true` otherwise verification fails
@@ -328,7 +328,7 @@ Named arguments:
 
 - verify\_sub
 
-    **INCOMPATIBLE CHANGE in 0.024:** If `verify_iss` is specified and
+    **INCOMPATIBLE CHANGE in 0.024:** If `verify_sub` is specified and
     claim `sub` (Subject) is completely missing it is a failure since 0.024
 
     `CODE ref` - subroutine (with 'sub' claim value passed as argument) should return `true` otherwise verification fails
@@ -339,7 +339,7 @@ Named arguments:
 
 - verify\_jti
 
-    **INCOMPATIBLE CHANGE in 0.024:** If `verify_iss` is specified and
+    **INCOMPATIBLE CHANGE in 0.024:** If `verify_jti` is specified and
     claim `jti` (JWT ID) is completely missing it is a failure since 0.024
 
     `CODE ref` - subroutine (with 'jti' claim value passed as argument) should return `true` otherwise verification fails
