@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.026   2019-NEXT
+        - fix #21 Potentially wrong IV in gcm_key_wrap
+
 0.025   2019-09-29
         - fix #19 Empty payload in JWS JSON token
         - PR #18 _verify_claims: Refactor iss, sub, aud, and jti checks

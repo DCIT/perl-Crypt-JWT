@@ -156,7 +156,7 @@ sub aes_key_unwrap {
 sub gcm_key_wrap {
   my ($kek, $pt_data, $aad, $cipher, $iv) = @_;
   $cipher = 'AES' unless defined $cipher;
-  $iv = random_bytes(Crypt::Cipher->blocksize($cipher)) unless defined $iv;
+  $iv = random_bytes(12) unless defined $iv; # 96 bits REQUIRED by RFC7518
   my ($ct_data, $tag) = gcm_encrypt_authenticate($cipher, $kek, $iv, $aad, $pt_data);
   return ($ct_data, $tag, $iv);
 }
