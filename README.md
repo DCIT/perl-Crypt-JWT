@@ -80,6 +80,7 @@ Named arguments:
                             an instance of Crypt::PK::ECC
         ES384               public ECC key, see ES256
         ES512               public ECC key, see ES256
+        EdDSA               public Ed25519 key
 
         JWE alg header      key value
         ------------------  ----------------------------------
@@ -98,12 +99,12 @@ Named arguments:
                             an instance of Crypt::PK::RSA or Crypt::OpenSSL::RSA
         RSA-OAEP-256        private RSA key, see RSA-OAEP
         RSA1_5              private RSA key, see RSA-OAEP
-        ECDH-ES             private ECC key, perl HASH ref with JWK key structure,
+        ECDH-ES             private ECC or X25519 key, perl HASH ref with JWK key structure,
                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
                             an instance of Crypt::PK::ECC
-        ECDH-ES+A128KW      private ECC key, see ECDH-ES
-        ECDH-ES+A192KW      private ECC key, see ECDH-ES
-        ECDH-ES+A256KW      private ECC key, see ECDH-ES
+        ECDH-ES+A128KW      private ECC or X25519 key, see ECDH-ES
+        ECDH-ES+A192KW      private ECC or X25519 key, see ECDH-ES
+        ECDH-ES+A256KW      private ECC or X25519 key, see ECDH-ES
 
     Example using the key from `jwk` token header:
 
@@ -439,6 +440,7 @@ Named arguments:
         ES256  ...  ECDSA + SHA256 signature
         ES384  ...  ECDSA + SHA384 signature
         ES512  ...  ECDSA + SHA512 signature
+        EdDSA  ...  Ed25519 signature
 
 - enc
 
@@ -476,6 +478,7 @@ Named arguments:
                             an instance of Crypt::PK::ECC
         ES384               private ECC key, see ES256
         ES512               private ECC key, see ES256
+        EdDSA               private Ed25519 key
 
         JWE alg header      key value
         ------------------  ----------------------------------
@@ -494,12 +497,12 @@ Named arguments:
                             an instance of Crypt::PK::RSA or Crypt::OpenSSL::RSA
         RSA-OAEP-256        public RSA key, see RSA-OAEP
         RSA1_5              public RSA key, see RSA-OAEP
-        ECDH-ES             public ECC key, perl HASH ref with JWK key structure,
+        ECDH-ES             public ECC or X25519 key, perl HASH ref with JWK key structure,
                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
                             an instance of Crypt::PK::ECC
-        ECDH-ES+A128KW      public ECC key, see ECDH-ES
-        ECDH-ES+A192KW      public ECC key, see ECDH-ES
-        ECDH-ES+A256KW      public ECC key, see ECDH-ES
+        ECDH-ES+A128KW      public ECC or X25519 key, see ECDH-ES
+        ECDH-ES+A192KW      public ECC or X25519 key, see ECDH-ES
+        ECDH-ES+A256KW      public ECC or X25519 key, see ECDH-ES
 
 - keypass
 

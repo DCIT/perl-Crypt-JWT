@@ -168,4 +168,23 @@ for my $enc (@enclist) {
   is($decoded_h->{str}, 'žluťoučký kůň', "decoded: enc=>$enc alg=>$alg");
 }
 
+{ # Ed25519 Signing: https://tools.ietf.org/html/rfc8037#appendix-A.4
+  my $sk = '{"kty":"OKP","crv":"Ed25519","d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}';
+  my $pk = '{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}';
+  my $payload = 'Example of Ed25519 signing';
+  my $token = encode_jwt(key=>\$sk, payload=>$payload, alg=>'EdDSA');
+  is($token, "eyJhbGciOiJFZERTQSJ9.RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc.hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt9g7sVvpAr_MuM0KAg");
+  my $decoded = decode_jwt(key=>\$pk, token=>$token);
+  is($decoded, "Example of Ed25519 signing");
+}
+
+{ # ECDH-ES with X25519 (XXX-TODO are there some official test vectors?)
+  my $pk = { curve => "x25519", pub => "178395b303d01458736dd006f4f004c09d4514108ea269886bf1e864d8bc9864" };
+  my $sk = { curve => "x25519", priv => "a807d597e769248f2c428e38ecb401ce97e229bcbe3055d92c1c9e82dabe10c3" };
+  my $payload = 'Hello!';
+  my $token = encode_jwt(key=>$pk, payload=>$payload, alg=>'ECDH-ES+A256KW', enc=>'A256GCM');
+  my $decoded = decode_jwt(key=>$sk, token=>$token);
+  is($decoded, "Hello!");
+}
+
 done_testing;

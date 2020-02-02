@@ -15,6 +15,8 @@ use Crypt::Misc qw(decode_b64u encode_b64u);
 use JSON::MaybeXS qw(decode_json encode_json);
 use Crypt::PK::RSA;
 use Crypt::PK::ECC;
+use Crypt::PK::Ed25519;
+use Crypt::PK::X25519;
 use Crypt::PRNG qw(random_bytes);
 use Crypt::KeyWrap ':all';
 use Crypt::AuthEnc::GCM qw(gcm_encrypt_authenticate gcm_decrypt_verify);
@@ -27,6 +29,7 @@ use Scalar::Util qw(looks_like_number);
 # JWK: https://tools.ietf.org/html/rfc7517
 # JWA: https://tools.ietf.org/html/rfc7518
 # JWT: https://tools.ietf.org/html/rfc7519
+# X25519/Ed25519 https://tools.ietf.org/html/rfc8037
 
 sub _prepare_rsa_key {
   my ($key) = @_;
@@ -60,6 +63,38 @@ sub _prepare_ecc_key {
   return Crypt::PK::ECC->new($key)  if ref($key) eq 'HASH' || ref($key) eq 'SCALAR';
   return Crypt::PK::ECC->new(@$key) if ref($key) eq 'ARRAY';
   croak "JWT: invalid ECC key";
+}
+
+sub _prepare_ed25519_key {
+  my ($key) = @_;
+  croak "JWT: undefined Ed25519 key" unless defined $key;
+  croak "JWT: invalid Ed25519 key (cannot be scalar)" unless ref $key;
+  # we need Crypt::PK::Ed25519 object
+  return $key                           if ref($key) eq 'Crypt::PK::Ed25519';
+  return Crypt::PK::Ed25519->new($key)  if ref($key) eq 'HASH' || ref($key) eq 'SCALAR';
+  return Crypt::PK::Ed25519->new(@$key) if ref($key) eq 'ARRAY';
+  croak "JWT: invalid Ed25519 key";
+}
+
+sub _prepare_ecdh_key {
+  my ($key) = @_;
+  croak "JWT: undefined ECDH key" unless defined $key;
+  croak "JWT: invalid ECDH key (cannot be scalar)" unless ref $key;
+
+  # we need Crypt::PK::X25519 or Crypt::PK::ECC object
+  return $key if ref($key) =~ /^Crypt::PK::(ECC|X25519)$/;
+
+  if (ref($key) eq 'HASH' || ref($key) eq 'SCALAR') {
+    #HACK: this is ugly
+    my $rv = eval { Crypt::PK::ECC->new($key) } || eval { Crypt::PK::X25519->new($key) };
+    return $rv if defined $rv;
+  }
+  if (ref($key) eq 'ARRAY') {
+    #HACK: this is ugly
+    my $rv = eval { Crypt::PK::ECC->new(@$key) } || eval { Crypt::PK::X25519->new(@$key) };
+    return $rv if defined $rv;
+  }
+  croak "JWT: invalid ECDH key";
 }
 
 sub _prepare_oct_key {
@@ -96,6 +131,7 @@ sub _kid_lookup {
   }
   return undef if !$found;
   return $found if $found->{kty} eq 'oct' && $alg =~ /^(HS|dir|PBES2-HS|A)/;
+  return $found if $found->{kty} eq 'OKP' && $alg =~ /^(EdDSA|ECDH-ES)/;
   return $found if $found->{kty} eq 'EC'  && $alg =~ /^(ES|EC)/;
   return $found if $found->{kty} eq 'RSA' && $alg =~ /^RS/;
   croak "JWT: key type '$found->{kty}' cannot be used with alg '$alg'";
@@ -295,12 +331,12 @@ sub _encrypt_jwe_cek {
     return ($cek, $ecek);
   }
   elsif ($alg =~ /^ECDH-ES\+A(128|192|256)KW$/) {
-    $key = _prepare_ecc_key($key);
+    $key = _prepare_ecdh_key($key);
     ($ecek, $hdr->{epk}) = ecdhaes_key_wrap($key, $cek, $alg, $hdr->{apu}, $hdr->{apv});
     return ($cek, $ecek);
   }
   elsif ($alg eq 'ECDH-ES') {
-    $key = _prepare_ecc_key($key);
+    $key = _prepare_ecdh_key($key);
     ($cek, $hdr->{epk}) = ecdh_key_wrap($key, $enc, $hdr->{apu}, $hdr->{apv});
     return ($cek, '');
   }
@@ -329,11 +365,11 @@ sub _decrypt_jwe_cek {
     return rsa_key_unwrap($key, $ecek, $alg);
   }
   elsif ($alg =~ /^ECDH-ES\+A(128|192|256)KW$/) {
-    $key = _prepare_ecc_key($key);
+    $key = _prepare_ecdh_key($key);
     return ecdhaes_key_unwrap($key, $ecek, $alg, $hdr->{epk}, $hdr->{apu}, $hdr->{apv});
   }
   elsif ($alg eq 'ECDH-ES') {
-    $key = _prepare_ecc_key($key);
+    $key = _prepare_ecdh_key($key);
     return ecdh_key_unwrap($key, $enc, $hdr->{epk}, $hdr->{apu}, $hdr->{apv});
   }
   croak "JWE: unknown alg '$alg'";
@@ -512,6 +548,10 @@ sub _sign_jws {
     my $pk = _prepare_ecc_key($key);
     $sig  = $pk->sign_message_rfc7518($data, "SHA$1");
   }
+  elsif ($alg eq 'EdDSA') { # Ed25519 signatures
+    my $pk = _prepare_ed25519_key($key);
+    $sig  = $pk->sign_message($data);
+  }
   return encode_b64u($sig);
 }
 
@@ -537,12 +577,16 @@ sub _verify_jws {
     my $hash = "SHA$1";
     my $hashlen = $1/8;
     my $pk = _prepare_rsa_key($key);
-    return 1 if  $pk->verify_message($sig, $data, $hash, 'pss', $hashlen);
+    return 1 if $pk->verify_message($sig, $data, $hash, 'pss', $hashlen);
   }
   elsif ($alg =~ /^ES(256|384|512)/) { # ECDSA signatures
     my $hash = "SHA$1";
     my $pk = _prepare_ecc_key($key);
     return 1 if $pk->verify_message_rfc7518($sig, $data, $hash);
+  }
+  elsif ($alg eq 'EdDSA') { # Ed25519 signatures
+    my $pk = _prepare_ed25519_key($key);
+    return 1 if $pk->verify_message($sig, $data);
   }
   return 0;
 }
@@ -640,7 +684,7 @@ sub encode_jwt {
   my %args = @_;
 
   my $ser = $args{serialization} || 'compact';
-  if ($args{alg} =~ /^(none|((HS|RS|PS|ES)(512|384|256)))$/) {
+  if ($args{alg} =~ /^(none|EdDSA|((HS|RS|PS|ES)(512|384|256)))$/) {
     ###JWS
     my ($b64u_header, $b64u_payload, $b64u_signature) = _encode_jws(%args);
     if ($ser eq 'compact') { # https://tools.ietf.org/html/rfc7515#section-7.1
@@ -820,6 +864,7 @@ The value depends on the C<alg> token header value.
                      an instance of Crypt::PK::ECC
  ES384               public ECC key, see ES256
  ES512               public ECC key, see ES256
+ EdDSA               public Ed25519 key
 
  JWE alg header      key value
  ------------------  ----------------------------------
@@ -838,12 +883,12 @@ The value depends on the C<alg> token header value.
                      an instance of Crypt::PK::RSA or Crypt::OpenSSL::RSA
  RSA-OAEP-256        private RSA key, see RSA-OAEP
  RSA1_5              private RSA key, see RSA-OAEP
- ECDH-ES             private ECC key, perl HASH ref with JWK key structure,
+ ECDH-ES             private ECC or X25519 key, perl HASH ref with JWK key structure,
                      a reference to SCALAR string with PEM or DER or JSON/JWK data,
                      an instance of Crypt::PK::ECC
- ECDH-ES+A128KW      private ECC key, see ECDH-ES
- ECDH-ES+A192KW      private ECC key, see ECDH-ES
- ECDH-ES+A256KW      private ECC key, see ECDH-ES
+ ECDH-ES+A128KW      private ECC or X25519 key, see ECDH-ES
+ ECDH-ES+A192KW      private ECC or X25519 key, see ECDH-ES
+ ECDH-ES+A256KW      private ECC or X25519 key, see ECDH-ES
 
 Example using the key from C<jwk> token header:
 
@@ -1183,6 +1228,7 @@ Supported JWS algorithms:
  ES256  ...  ECDSA + SHA256 signature
  ES384  ...  ECDSA + SHA384 signature
  ES512  ...  ECDSA + SHA512 signature
+ EdDSA  ...  Ed25519 signature
 
 =item enc
 
@@ -1220,6 +1266,7 @@ A key used for token encryption (JWE) or token signing (JWS). The value depends 
                      an instance of Crypt::PK::ECC
  ES384               private ECC key, see ES256
  ES512               private ECC key, see ES256
+ EdDSA               private Ed25519 key
 
  JWE alg header      key value
  ------------------  ----------------------------------
@@ -1238,12 +1285,12 @@ A key used for token encryption (JWE) or token signing (JWS). The value depends 
                      an instance of Crypt::PK::RSA or Crypt::OpenSSL::RSA
  RSA-OAEP-256        public RSA key, see RSA-OAEP
  RSA1_5              public RSA key, see RSA-OAEP
- ECDH-ES             public ECC key, perl HASH ref with JWK key structure,
+ ECDH-ES             public ECC or X25519 key, perl HASH ref with JWK key structure,
                      a reference to SCALAR string with PEM or DER or JSON/JWK data,
                      an instance of Crypt::PK::ECC
- ECDH-ES+A128KW      public ECC key, see ECDH-ES
- ECDH-ES+A192KW      public ECC key, see ECDH-ES
- ECDH-ES+A256KW      public ECC key, see ECDH-ES
+ ECDH-ES+A128KW      public ECC or X25519 key, see ECDH-ES
+ ECDH-ES+A192KW      public ECC or X25519 key, see ECDH-ES
+ ECDH-ES+A256KW      public ECC or X25519 key, see ECDH-ES
 
 =item keypass
 
