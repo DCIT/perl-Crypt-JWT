@@ -1,6 +1,7 @@
 Changes for Crypt-JWT distribution
 
-0.026   2019-NEXT
+0.026   2019-02-02
+        - added support for EdDSA/ed25519 + ECDH/x25519
         - fix #21 Potentially wrong IV in gcm_key_wrap
 
 0.025   2019-09-29
