@@ -3,6 +3,10 @@
 \B\.git\b
 \B\.gitignore\b
 
+# Avoid CI files
+^.travis*
+^.appveyor*
+
 # Avoid Makemaker generated and utility files.
 \bblib/
 \bMakeMaker-\d

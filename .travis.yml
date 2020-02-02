@@ -1,0 +1,34 @@
+language: perl
+matrix:
+  include:
+  - perl: "5.30"
+    dist: xenial
+  - perl: "5.28"
+    dist: xenial
+  - perl: "5.26"
+    dist: xenial
+  - perl: "5.24"
+    dist: xenial
+  - perl: "5.22"
+    dist: trusty
+  - perl: "5.20"
+    dist: trusty
+  - perl: "5.18"
+    dist: trusty
+  - perl: "5.16"
+    dist: trusty
+  - perl: "5.14"
+    dist: trusty
+  - perl: "5.12"
+    dist: trusty
+  - perl: "5.10"
+    dist: trusty
+  - perl: "5.8"
+    dist: trusty
+env:
+  global:
+    - MAKEFLAGS=-j4
+    - AUTHOR_MODE=1
+install:
+  - cpanm --notest --installdeps --with-recommends .
+sudo: false
