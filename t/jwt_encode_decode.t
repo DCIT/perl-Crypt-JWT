@@ -130,7 +130,7 @@ for my $alg (sort keys %jwsalg) {
   my $payload = 'testik';
   my $token = encode_jwt(key=>$k->[0], payload=>$payload, alg=>$alg, allow_none=>1);
   ok($token, "token: alg=>$alg");
-  my $decoded = decode_jwt(key=>$k->[1], token=>$token, alg=>$alg, allow_none=>1);
+  my $decoded = decode_jwt(key=>$k->[1], token=>$token);
   is($decoded, 'testik', "decoded: alg=>$alg");
 }
 
@@ -140,7 +140,7 @@ for my $alg (sort keys %jwealg) {
     my $payload = 'testik';
     my $token = encode_jwt(key=>$k->[1], payload=>$payload, alg=>$alg, enc=>$enc);
     ok($token, "token: enc=>$enc alg=>$alg");
-    my $decoded = decode_jwt(key=>$k->[0], token=>$token, alg=>$alg, enc=>$enc);
+    my $decoded = decode_jwt(key=>$k->[0], token=>$token);
     is($decoded, 'testik', "decoded: enc=>$enc alg=>$alg");
   }
 }
