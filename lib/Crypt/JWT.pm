@@ -442,6 +442,8 @@ sub _encode_jwe {
   my $alg     = $args{alg};
   my $enc     = $args{enc};
   my $header  = $args{extra_headers} ? \%{$args{extra_headers}} : {};
+  croak "JWE: missing 'enc'" if !defined $enc;
+  croak "JWE: missing 'payload'" if !defined $payload;
   # add claims to payload
   _add_claims($payload, %args) if ref $payload eq 'HASH';
   # serialize payload
@@ -596,6 +598,7 @@ sub _encode_jws {
   my $payload = $args{payload};
   my $alg     = $args{alg};
   my $header  = $args{extra_headers} ? \%{$args{extra_headers}} : {};
+  croak "JWS: missing 'payload'" if !defined $payload;
   croak "JWS: alg 'none' not allowed" if $alg eq 'none' && !$args{allow_none};
   # add claims to payload
   _add_claims($payload, %args) if ref $payload eq 'HASH';
@@ -683,6 +686,7 @@ sub _decode_jws {
 sub encode_jwt {
   my %args = @_;
 
+  croak "JWT: missing 'alg'" unless $args{alg};
   my $ser = $args{serialization} || 'compact';
   if ($args{alg} =~ /^(none|EdDSA|((HS|RS|PS|ES)(512|384|256)))$/) {
     ###JWS
