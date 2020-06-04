@@ -78,6 +78,7 @@ Named arguments:
         ES256               public ECC key, perl HASH ref with JWK key structure,
                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
                             an instance of Crypt::PK::ECC
+        ES256K              public ECC key, see ES256
         ES384               public ECC key, see ES256
         ES512               public ECC key, see ES256
         EdDSA               public Ed25519 key
@@ -438,6 +439,7 @@ Named arguments:
         PS384  ...  RSA+PSS + SHA384 signature
         PS512  ...  RSA+PSS + SHA512 signature
         ES256  ...  ECDSA + SHA256 signature
+        ES256K ...  ECDSA + SHA256 signature
         ES384  ...  ECDSA + SHA384 signature
         ES512  ...  ECDSA + SHA512 signature
         EdDSA  ...  Ed25519 signature
@@ -476,6 +478,7 @@ Named arguments:
         ES256               private ECC key, perl HASH ref with JWK key structure,
                             a reference to SCALAR string with PEM or DER or JSON/JWK data,
                             an instance of Crypt::PK::ECC
+        ES256K              private ECC key, see ES256
         ES384               private ECC key, see ES256
         ES512               private ECC key, see ES256
         EdDSA               private Ed25519 key
@@ -572,7 +575,7 @@ Named arguments:
 
 # SEE ALSO
 
-[Crypt::Cipher::AES](https://metacpan.org/pod/Crypt::Cipher::AES), [Crypt::AuthEnc::GCM](https://metacpan.org/pod/Crypt::AuthEnc::GCM), [Crypt::PK::RSA](https://metacpan.org/pod/Crypt::PK::RSA), [Crypt::PK::ECC](https://metacpan.org/pod/Crypt::PK::ECC), [Crypt::KeyDerivation](https://metacpan.org/pod/Crypt::KeyDerivation), [Crypt::KeyWrap](https://metacpan.org/pod/Crypt::KeyWrap)
+[Crypt::Cipher::AES](https://metacpan.org/pod/Crypt%3A%3ACipher%3A%3AAES), [Crypt::AuthEnc::GCM](https://metacpan.org/pod/Crypt%3A%3AAuthEnc%3A%3AGCM), [Crypt::PK::RSA](https://metacpan.org/pod/Crypt%3A%3APK%3A%3ARSA), [Crypt::PK::ECC](https://metacpan.org/pod/Crypt%3A%3APK%3A%3AECC), [Crypt::KeyDerivation](https://metacpan.org/pod/Crypt%3A%3AKeyDerivation), [Crypt::KeyWrap](https://metacpan.org/pod/Crypt%3A%3AKeyWrap)
 
 # LICENSE
 
