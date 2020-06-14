@@ -6,7 +6,7 @@ use Crypt::JWT qw(encode_jwt decode_jwt);
 use Crypt::PK::ECC;
 use Crypt::PK::RSA;
 use Crypt::Misc qw(encode_b64u);
-use JSON::MaybeXS qw(encode_json);
+use JSON qw(encode_json);
 
 # key password is 'secret'
 my $rsaPriv = <<'EOF';

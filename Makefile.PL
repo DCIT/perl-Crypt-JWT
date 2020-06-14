@@ -11,7 +11,7 @@ WriteMakefile(
     MIN_PERL_VERSION => '5.006',
     LICENSE          => 'perl',
     PREREQ_PM => {
-      'JSON::MaybeXS'       => '1.003005', # we need: (en|de)code_json
+      'JSON'                => 0,
       'Exporter'            => '5.57',     # we need: use Exporter 'import';
       'Compress::Raw::Zlib' => 0,
       'CryptX'              => '0.067',    # we need: Ed25519+X25519

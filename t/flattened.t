@@ -27,7 +27,7 @@ is($header->{kid}, "e9bc097a-ce51-4036-9562-d2ade882db0d");
 #Example from RFC 7516 (JWE)
 
 {
-    require JSON::MaybeXS;
+    require JSON;
 
     #https://tools.ietf.org/html/rfc7516#appendix-A.2.3
     my $jwk_hr = {
@@ -46,7 +46,7 @@ is($header->{kid}, "e9bc097a-ce51-4036-9562-d2ade882db0d");
     my $key = { "kty" => "oct", "k" => "GawgguFyGrWKav7AX4VKUg" };
 
     #https://tools.ietf.org/html/rfc7516#appendix-A.5
-    my $jwe_flattened = JSON::MaybeXS::encode_json(
+    my $jwe_flattened = JSON::encode_json(
         {
             protected     => "eyJlbmMiOiJBMTI4Q0JDLUhTMjU2In0",
             unprotected   => { "jku" => "https://server.example.com/keys.jwks" },
