@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.028   2020-06-14
+        - switch to JSON from JSON::MaybeXS
+
 0.027   2020-06-05
         - fix #25 more intuitive exceptions
         - support for ES256K
