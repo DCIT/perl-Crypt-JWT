@@ -315,6 +315,8 @@ Named arguments:
 
     `Regexp ref` - 'iss' claim value has to match given regexp otherwise verification fails
 
+    `Scalar` - 'iss' claim value has to be equal to given string (since 0.029)
+
     `undef` (default) - do not verify 'iss' claim
 
 - verify\_aud
@@ -325,6 +327,8 @@ Named arguments:
     `CODE ref` - subroutine (with 'aud' claim value passed as argument) should return `true` otherwise verification fails
 
     `Regexp ref` - 'aud' claim value has to match given regexp otherwise verification fails
+
+    `Scalar` - 'aud' claim value has to be equal to given string (since 0.029)
 
     `undef` (default) - do not verify 'aud' claim
 
@@ -337,6 +341,8 @@ Named arguments:
 
     `Regexp ref` - 'sub' claim value has to match given regexp otherwise verification fails
 
+    `Scalar` - 'sub' claim value has to be equal to given string (since 0.029)
+
     `undef` (default) - do not verify 'sub' claim
 
 - verify\_jti
@@ -347,6 +353,8 @@ Named arguments:
     `CODE ref` - subroutine (with 'jti' claim value passed as argument) should return `true` otherwise verification fails
 
     `Regexp ref` - 'jti' claim value has to match given regexp otherwise verification fails
+
+    `Scalar` - 'jti' claim value has to be equal to given string (since 0.029)
 
     `undef` (default) - do not verify 'jti' claim
 

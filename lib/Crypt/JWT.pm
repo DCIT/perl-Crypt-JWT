@@ -215,10 +215,14 @@ sub _verify_claims {
         croak "JWT: $claim claim re check failed" unless $value =~ $check;
       }
       elsif (ref $check eq 'CODE') {
-        croak "JWT: $claim claim check failed" unless $check->($payload->{$claim});
+        croak "JWT: $claim claim code check failed" unless $check->($payload->{$claim});
+      }
+      elsif (!ref $check) {
+        my $value = $payload->{$claim};
+        croak "JWT: $claim claim scalar check failed" unless defined $value && $value eq $check;
       }
       else {
-        croak "JWT: verify_$claim must be Regexp or CODE";
+        croak "JWT: verify_$claim must be Regexp, Scalar or CODE";
       }
     }
     else {
@@ -1104,6 +1108,8 @@ C<CODE ref> - subroutine (with 'iss' claim value passed as argument) should retu
 
 C<Regexp ref> - 'iss' claim value has to match given regexp otherwise verification fails
 
+C<Scalar> - 'iss' claim value has to be equal to given string (since 0.029)
+
 C<undef> (default) - do not verify 'iss' claim
 
 =item verify_aud
@@ -1114,6 +1120,8 @@ claim C<aud> (Audience) is completely missing it is a failure since 0.024
 C<CODE ref> - subroutine (with 'aud' claim value passed as argument) should return C<true> otherwise verification fails
 
 C<Regexp ref> - 'aud' claim value has to match given regexp otherwise verification fails
+
+C<Scalar> - 'aud' claim value has to be equal to given string (since 0.029)
 
 C<undef> (default) - do not verify 'aud' claim
 
@@ -1126,6 +1134,8 @@ C<CODE ref> - subroutine (with 'sub' claim value passed as argument) should retu
 
 C<Regexp ref> - 'sub' claim value has to match given regexp otherwise verification fails
 
+C<Scalar> - 'sub' claim value has to be equal to given string (since 0.029)
+
 C<undef> (default) - do not verify 'sub' claim
 
 =item verify_jti
@@ -1136,6 +1146,8 @@ claim C<jti> (JWT ID) is completely missing it is a failure since 0.024
 C<CODE ref> - subroutine (with 'jti' claim value passed as argument) should return C<true> otherwise verification fails
 
 C<Regexp ref> - 'jti' claim value has to match given regexp otherwise verification fails
+
+C<Scalar> - 'jti' claim value has to be equal to given string (since 0.029)
 
 C<undef> (default) - do not verify 'jti' claim
 
