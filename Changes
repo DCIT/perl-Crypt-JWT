@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.029   2020-06-22
+        - verify_iss, verify_aud, verify_sub, verify_jti accept Scalar
+
 0.028   2020-06-14
         - switch to JSON from JSON::MaybeXS
 
