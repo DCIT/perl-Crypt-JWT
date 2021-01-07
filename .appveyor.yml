@@ -8,6 +8,7 @@ image:
   - Visual Studio 2019
 
 environment:
+  matrix:
     - perl_type: strawberry
       perl_version: 5.32.0.1    #gcc 8.3.0
       perl_bits: 32
