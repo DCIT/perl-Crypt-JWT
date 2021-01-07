@@ -133,7 +133,7 @@ sub _kid_lookup {
   return $found if $found->{kty} eq 'oct' && $alg =~ /^(HS|dir|PBES2-HS|A)/;
   return $found if $found->{kty} eq 'OKP' && $alg =~ /^(EdDSA|ECDH-ES)/;
   return $found if $found->{kty} eq 'EC'  && $alg =~ /^(ES|EC)/;
-  return $found if $found->{kty} eq 'RSA' && $alg =~ /^RS/;
+  return $found if $found->{kty} eq 'RSA' && $alg =~ /^(RS|PS)/;
   croak "JWT: key type '$found->{kty}' cannot be used with alg '$alg'";
 }
 
