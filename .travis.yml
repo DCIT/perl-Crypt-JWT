@@ -1,6 +1,8 @@
 language: perl
 matrix:
   include:
+  - perl: "5.32"
+    dist: xenial
   - perl: "5.30"
     dist: xenial
   - perl: "5.28"

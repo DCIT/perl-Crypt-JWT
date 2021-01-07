@@ -8,12 +8,17 @@ image:
   - Visual Studio 2019
 
 environment:
-  matrix:
     - perl_type: strawberry
-      perl_version: 5.30.1.1    #gcc 8.3.0
+      perl_version: 5.32.0.1    #gcc 8.3.0
       perl_bits: 32
     - perl_type: strawberry
-      perl_version: 5.30.1.1    #gcc 8.3.0
+      perl_version: 5.32.0.1    #gcc 8.3.0
+      perl_bits: 64
+    - perl_type: strawberry
+      perl_version: 5.30.3.1    #gcc 8.3.0
+      perl_bits: 32
+    - perl_type: strawberry
+      perl_version: 5.30.3.1    #gcc 8.3.0
       perl_bits: 64
     - perl_type: strawberry     #gcc 7.1.0
       perl_version: 5.28.2.1
@@ -21,7 +26,7 @@ environment:
     - perl_type: strawberry     #gcc 7.1.0
       perl_version: 5.28.2.1
       perl_bits: 64
-#    - perl_type: strawberry 
+#    - perl_type: strawberry
 #      perl_version: 5.26.3.1    #gcc 7.1.0
 #      perl_bits: 32
 #    - perl_type: strawberry
@@ -65,14 +70,14 @@ environment:
       perl_bits: 64
 #    - perl_type: strawberry_old
 #      perl_version: 5.12.3.0    #gcc 4.4.3
-    - perl_type: strawberry_old
-      perl_version: 5.10.1.2    #gcc 3.4.5
+#    - perl_type: strawberry_old
+#      perl_version: 5.10.1.2    #gcc 3.4.5
     - perl_type: cygwin64
     - perl_type: cygwin32
 
 init:
   - reg add "HKLM\SYSTEM\CurrentControlSet\Control\Windows" /f /v ErrorMode /d 2
-  - reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1  
+  - reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1
 
 install:
   - cinst -y wget
