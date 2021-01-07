@@ -1390,4 +1390,4 @@ This program is free software; you can redistribute it and/or modify it under th
 
 =head1 COPYRIGHT
 
-Copyright (c) 2015 DCIT, a.s. L<http://www.dcit.cz> / Karel Miko
+Copyright (c) 2021 DCIT, a.s. L<https://www.dcit.cz> / Karel Miko
