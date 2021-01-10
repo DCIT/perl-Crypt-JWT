@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.031   2021-01-10
+        - fix #29 Broken JWS support for ES256K "alg" type
+
 0.030   2021-01-08
         - fix #28 Using "kid_keys" with PS256 fails
 
