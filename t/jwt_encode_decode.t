@@ -48,6 +48,20 @@ my $Ecc512Private = {
   d => encode_b64u(join '', map { chr($_) } (0, 222, 129, 9, 133, 207, 123, 116, 176, 83, 95, 169, 29, 121, 160, 137, 22, 21, 176, 59, 203, 129, 62, 111, 19, 78, 14, 174, 20, 211, 56, 160, 83, 42, 74, 219, 208, 39, 231, 33, 84, 114, 71, 106, 109, 161, 116, 243, 166, 146, 252, 231, 137, 228, 99, 149, 152, 123, 201, 157, 155, 131, 181, 106, 179, 112)),
 };
 
+my $Ecc256KPublic = {
+  kty => "EC",
+  crv => "P-256K",
+  x   => "BI73sZsLszl-rfZhmuigpQqIWvQuIz9vt0NE54tMbvY",
+  y   => "K7X9QZsX_krlqGuqw_WYr46_N_M2rY5pq79Jf916hbc",
+};
+my $Ecc256KPrivate = {
+  kty => "EC",
+  crv => "P-256K",
+  d   => "HguYHaQ8c6Ap4tJDOb-X0Hze6gYXvIfq7aENHJowIDc",
+  x   => "BI73sZsLszl-rfZhmuigpQqIWvQuIz9vt0NE54tMbvY",
+  y   => "K7X9QZsX_krlqGuqw_WYr46_N_M2rY5pq79Jf916hbc",
+};
+
 my $rsaPub = <<'EOF';
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqFZv0pea/jn5Mo4qEUmS
@@ -120,9 +134,10 @@ my %jwsalg = (
     'PS256' => [Crypt::PK::RSA->new(\$rsaPriv), Crypt::PK::RSA->new(\$rsaPub)],
     'PS384' => [Crypt::PK::RSA->new(\$rsaPriv), Crypt::PK::RSA->new(\$rsaPub)],
     'PS512' => [Crypt::PK::RSA->new(\$rsaPriv), Crypt::PK::RSA->new(\$rsaPub)],
-    'ES256' => [Crypt::PK::ECC->new($Ecc256Private), Crypt::PK::ECC->new($Ecc256Public)],
-    'ES384' => [Crypt::PK::ECC->new($Ecc512Private), Crypt::PK::ECC->new($Ecc512Public)],
-    'ES512' => [Crypt::PK::ECC->new($Ecc384Private), Crypt::PK::ECC->new($Ecc384Public)],
+    'ES256' => [Crypt::PK::ECC->new($Ecc256Private),  Crypt::PK::ECC->new($Ecc256Public)],
+    'ES256K'=> [Crypt::PK::ECC->new($Ecc256KPrivate), Crypt::PK::ECC->new($Ecc256KPublic)],
+    'ES384' => [Crypt::PK::ECC->new($Ecc512Private),  Crypt::PK::ECC->new($Ecc512Public)],
+    'ES512' => [Crypt::PK::ECC->new($Ecc384Private),  Crypt::PK::ECC->new($Ecc384Public)],
 );
 
 for my $alg (sort keys %jwsalg) {

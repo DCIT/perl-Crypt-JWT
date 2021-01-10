@@ -693,7 +693,7 @@ sub encode_jwt {
 
   croak "JWT: missing 'alg'" unless $args{alg};
   my $ser = $args{serialization} || 'compact';
-  if ($args{alg} =~ /^(none|EdDSA|((HS|RS|PS|ES)(512|384|256)))$/) {
+  if ($args{alg} =~ /^(none|EdDSA|(HS|RS|PS)(256|384|512)|ES(256|256K|384|512))$/) {
     ###JWS
     my ($b64u_header, $b64u_payload, $b64u_signature) = _encode_jws(%args);
     if ($ser eq 'compact') { # https://tools.ietf.org/html/rfc7515#section-7.1
@@ -709,7 +709,7 @@ sub encode_jwt {
       croak "JWT: unsupported JWS serialization '$ser'";
     }
   }
-  else {
+  elsif ($args{alg} =~ /^(dir|A(128|192|256)KW|A(128|192|256)GCMKW|PBES2-(HS256\+A128KW|HS384\+A192KW|HS512\+A256KW)|RSA-OAEP|RSA-OAEP-256|RSA1_5|ECDH-ES\+A(128|192|256)KW|ECDH-ES)$/) {
     ### JWE
     my ($b64u_header, $b64u_ecek, $b64u_iv, $b64u_ct, $b64u_tag, $b64u_aad) = _encode_jwe(%args);
     if ($ser eq 'compact') { # https://tools.ietf.org/html/rfc7516#section-7.1
@@ -737,6 +737,9 @@ sub encode_jwt {
     else {
       croak "JWT: unsupported JWE serialization '$ser'";
     }
+  }
+  else {
+      croak "JWT: unexpected alg '$args{alg}'";
   }
 }
 
