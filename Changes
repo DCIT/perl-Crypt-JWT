@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.032   2021-03-18
+        - fix #30 use lower uid/gid in release tarball
+
 0.031   2021-01-10
         - fix #29 Broken JWS support for ES256K "alg" type
 
