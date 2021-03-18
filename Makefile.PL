@@ -26,7 +26,6 @@ WriteMakefile(
     },
     dist => {
       PREOP => 'perldoc -u lib/Crypt/JWT.pm | pod2markdown > README.md',
-      TAR => 'ptar',
-      TARFLAGS => '-c -C -f'
+      TARFLAGS => '--owner=0 --group=0 -cvf'
     },
 );
