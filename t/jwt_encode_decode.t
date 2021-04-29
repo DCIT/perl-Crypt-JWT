@@ -202,4 +202,13 @@ for my $enc (@enclist) {
   is($decoded, "Hello!");
 }
 
+{ # https://github.com/DCIT/perl-Crypt-JWT/issues/31
+  # verify_xxx options do not work with decode_payload=0
+  my $h = { hello => 'world' };
+  my $token = encode_jwt(key=>\$rsaPriv, payload=>$h, alg=>'RS256', relative_exp => 1000);
+  ok($token);
+  my $decoded = eval { decode_jwt(key=>\$rsaPriv, token=>$token, verify_exp=>1, decode_payload=>0) };
+  ok(!$decoded, "should fail: decode_payload=>0 + verify_exp");
+}
+
 done_testing;

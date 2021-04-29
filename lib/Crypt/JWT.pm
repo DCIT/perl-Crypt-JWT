@@ -168,6 +168,17 @@ sub _verify_claims {
 
   return if $args{ignore_claims};
 
+  if (ref($payload) ne 'HASH') {
+    # https://github.com/DCIT/perl-Crypt-JWT/issues/31
+    # payload needs to be decoded into a HASH for checking any verify_XXXX
+    for my $claim (qw(exp nbf iat iss sub aud jti)) {
+      if (defined $args{"verify_$claim"} && $args{"verify_$claim"} != 0) {
+        croak "JWT: cannot check verify_$claim (payload not decoded JSON/HASH)";
+      }
+    }
+    return; # nothing to check
+  }
+
   my $leeway = $args{leeway} || 0;
   my $now = time;
 
@@ -527,7 +538,7 @@ sub _decode_jwe {
   my $payload = _decrypt_jwe_payload($cek, $header->{enc}, $aad, $ct, $iv, $tag);
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
   $payload = _payload_dec($payload, $args{decode_payload});
-  _verify_claims($payload, %args) if ref $payload eq 'HASH'; # croaks on error
+  _verify_claims($payload, %args); # croaks on error
   return ($header, $payload);
 }
 
@@ -683,7 +694,7 @@ sub _decode_jws {
   croak "JWS: invalid payload part" if $b64u_payload && !$payload;
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
   $payload = _payload_dec($payload, $args{decode_payload});
-  _verify_claims($payload, %args) if ref $payload eq 'HASH'; # croaks on error
+  _verify_claims($payload, %args); # croaks on error
   $header = { %$unprotected_header, %$header }; # merge headers
   return ($header, $payload);
 }
