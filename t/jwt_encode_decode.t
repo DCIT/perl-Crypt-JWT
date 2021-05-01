@@ -207,8 +207,20 @@ for my $enc (@enclist) {
   my $h = { hello => 'world' };
   my $token = encode_jwt(key=>\$rsaPriv, payload=>$h, alg=>'RS256', relative_exp => 1000);
   ok($token);
-  my $decoded = eval { decode_jwt(key=>\$rsaPriv, token=>$token, verify_exp=>1, decode_payload=>0) };
-  ok(!$decoded, "should fail: decode_payload=>0 + verify_exp");
+  ok( decode_jwt(key=>\$rsaPub, token=>$token) );
+  ok( decode_jwt(key=>\$rsaPub, token=>$token, verify_exp=>1, decode_payload=>undef) );
+  ok( decode_jwt(key=>\$rsaPub, token=>$token, verify_exp=>1, decode_payload=>1) );
+  ok( decode_jwt(key=>\$rsaPub, token=>$token, verify_exp=>0, decode_payload=>1) );
+  ok( decode_jwt(key=>\$rsaPub, token=>$token, verify_exp=>0, decode_payload=>0) );
+  ok( !eval { decode_jwt(key=>\$rsaPub, token=>$token, verify_exp=>1, decode_payload=>0) } );
+  my $tokenex = encode_jwt(key=>\$rsaPriv, payload=>$h, alg=>'RS256', relative_exp => -1000);
+  ok($tokenex);
+  ok( !eval { decode_jwt(key=>\$rsaPub, token=>$tokenex) } );
+  ok( !eval { decode_jwt(key=>\$rsaPub, token=>$tokenex, verify_exp=>1, decode_payload=>undef) } );
+  ok( !eval { decode_jwt(key=>\$rsaPub, token=>$tokenex, verify_exp=>1, decode_payload=>1) } );
+  ok( decode_jwt(key=>\$rsaPub, token=>$tokenex, verify_exp=>0, decode_payload=>1) );
+  ok( decode_jwt(key=>\$rsaPub, token=>$tokenex, verify_exp=>0, decode_payload=>0) );
+  ok( !eval { decode_jwt(key=>\$rsaPub, token=>$tokenex, verify_exp=>1, decode_payload=>0) } );
 }
 
 done_testing;
