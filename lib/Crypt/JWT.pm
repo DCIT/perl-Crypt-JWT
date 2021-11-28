@@ -280,7 +280,7 @@ sub _payload_unzip {
 sub _payload_enc {
   my ($payload) = @_;
   if (ref($payload) =~ /^(HASH|ARRAY)$/) {
-    $payload = JSON->new->canonical(1)->encode($payload);
+    $payload = JSON->new->utf8->canonical->encode($payload);
   }
   else {
     utf8::downgrade($payload, 1) or croak "JWT: payload cannot contain wide character";
