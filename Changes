@@ -1,5 +1,8 @@
 Changes for Crypt-JWT distribution
 
+0.034   2021-11-28
+        - fix #32 ensure payload is serialized consistently (canonical)
+
 0.033   2021-05-01
         - fix #31 verify_xxx options do not work properly with decode_payload=0
 
