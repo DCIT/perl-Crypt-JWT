@@ -1024,9 +1024,9 @@ This parametes can be either a JWK Set JSON string (see RFC7517) or a perl HASH 
 
 You can use L<Crypt::PK::RSA/"export_key_jwk"> to generate a JWK for RSA:
 
-  my $pubkey  = Crypt::PK::RSA->new('rs256-4096-public.pem');
-  my $jwk     = $pubkey->export_key_jwk('public', 1);
-  $jwk->{kid} = 'key1';
+  my $pubkey = Crypt::PK::RSA->new('rs256-4096-public.pem');
+  my $jwk_hash = $pubkey->export_key_jwk('public', 1);
+  $jwk_hash->{kid} = 'key1';
   my $keylist = {
     keys => [
       $jwk_hash,
