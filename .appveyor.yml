@@ -74,7 +74,7 @@ environment:
 #    - perl_type: strawberry_old
 #      perl_version: 5.10.1.2    #gcc 3.4.5
     - perl_type: cygwin64
-    - perl_type: cygwin32
+#    - perl_type: cygwin32       #stopped working
 
 init:
   - reg add "HKLM\SYSTEM\CurrentControlSet\Control\Windows" /f /v ErrorMode /d 2

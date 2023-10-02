@@ -9,10 +9,10 @@ rem -g --upgrade-also   also upgrade installed packages
 :perl_setup
 
 if "%perl_type%" == "cygwin32" (
-  start /wait c:\cygwin\setup-x86.exe -q -P perl -P make -P gcc -P gcc-g++ -P libcrypt-devel
+  start /wait c:\cygwin\setup-x86.exe -q -g -P perl -P make -P gcc -P gcc-g++ -P libcrypt-devel -P libnsl-devel
   set "PATH=C:\cygwin\usr\local\bin;C:\cygwin\bin;%PATH%"
 ) else if "%perl_type%" == "cygwin64" (
-  start /wait c:\cygwin64\setup-x86_64.exe -q -P perl -P make -P gcc -P gcc-g++ -P libcrypt-devel
+  start /wait c:\cygwin64\setup-x86_64.exe -q -g -P perl -P make -P gcc -P gcc-g++ -P libcrypt-devel -P libnsl-devel
   set "PATH=C:\cygwin64\usr\local\bin;C:\cygwin64\bin;%PATH%"
 ) else if "%perl_type%" == "strawberry" (
   wget -q http://strawberryperl.com/download/%perl_version%/strawberry-perl-%perl_version%-%perl_bits%bit-portable.zip -O downloaded-strawberry.zip
