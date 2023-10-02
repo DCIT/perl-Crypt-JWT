@@ -16,7 +16,7 @@ WriteMakefile(
       'Compress::Raw::Zlib' => 0,
       'CryptX'              => '0.067',    # we need: Ed25519+X25519
       'Scalar::Util'        => 0,
-      'Test::More'          => 0,
+      'Test::More'          => '0.88',     # we need: done_testing
     },
     META_MERGE => {
       resources => {
