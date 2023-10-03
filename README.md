@@ -215,6 +215,17 @@ Named arguments:
         };
         my $payload = decode_jwt(token=>$t, kid_keys=>$keylist);
 
+    You can use ["export\_key\_jwk" in Crypt::PK::RSA](https://metacpan.org/pod/Crypt%3A%3APK%3A%3ARSA#export_key_jwk) to generate a JWK for RSA:
+
+        my $pubkey = Crypt::PK::RSA->new('rs256-4096-public.pem');
+        my $jwk_hash = $pubkey->export_key_jwk('public', 1);
+        $jwk_hash->{kid} = 'key1';
+        my $keylist = {
+          keys => [
+            $jwk_hash,
+          ]
+        };
+
     The structure described above is used e.g. by [https://www.googleapis.com/oauth2/v2/certs](https://www.googleapis.com/oauth2/v2/certs)
 
         use Mojo::UserAgent;
@@ -229,7 +240,7 @@ Named arguments:
         my $payload = decode_jwt(token => $t, kid_keys => $google_certs);
 
     When the token header contains `kid` item the corresponding key is looked up in `kid_keys` list and used for token
-    decoding (you do not need to pass the explicit key via `key` parameter).
+    decoding (you do not need to pass the explicit key via `key` parameter). Add a kid header using ["extra\_headers"](#extra_headers).
 
     **INCOMPATIBLE CHANGE in 0.023:** When `kid_keys` is specified it croaks if token header does not contain `kid` value or
     if `kid` was not found in `kid_keys`.
@@ -534,6 +545,10 @@ Named arguments:
 
         my $token = encode_jwt(payload=>$p, key=>$k, alg=>'PBES2-HS512+A256KW', extra_headers=>{p2c=8000, p2s=>32});
         #NOTE: handling of p2s header is a special case, in the end it is replaced with the generated salt
+
+    You can also use this to specify a kid value (see ["kid\_keys"](#kid_keys))
+
+        my $token = encode_jwt(payload=>$p, key=>$k, alg => 'RS256', extra_headers=>{kid=>'key1'});
 
 - unprotected\_headers
 
