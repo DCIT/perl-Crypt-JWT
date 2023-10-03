@@ -51,7 +51,6 @@ jobs:
 
   mac:
     runs-on: macOS-latest
-
     steps:
       - uses: actions/checkout@v3
       - name: Set up Perl
@@ -72,7 +71,6 @@ jobs:
 
   windows:
     runs-on: windows-latest
-
     steps:
       - name: Set git to use LF
         run: |
@@ -99,7 +97,6 @@ jobs:
 
   cygwin:
     runs-on: windows-latest
-
     steps:
       - name: Set git to use LF
         run: |
@@ -108,7 +105,6 @@ jobs:
       - name: Set up Cygwin
         uses: egor-tensin/setup-cygwin@v4
         with:
-            platform: x64
             packages: perl_base perl-ExtUtils-MakeMaker perl-JSON make gcc-g++ bash libcrypt-devel libnsl-devel
       - uses: actions/checkout@v3
       - run: perl -V
