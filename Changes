@@ -1,6 +1,6 @@
 Changes for Crypt-JWT distribution
 
-0.035   2023-10-XX
+0.035   2023-10-03
         - PR #37 Speed up decode_jwt
 
 0.034   2021-11-28
