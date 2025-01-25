@@ -343,6 +343,9 @@ Named arguments:
 
     `undef` (default) - do not verify 'aud' claim
 
+    **SINCE 0.036** we handle 'aud' claim when it contains an array of strings. In this case, the check should succeed if at least one
+    value from the array matches. All checks (CODE, Regexp, Scalar) are performed individually against each member of the array of strings.
+
 - verify\_sub
 
     **INCOMPATIBLE CHANGE in 0.024:** If `verify_sub` is specified and
@@ -402,6 +405,18 @@ Named arguments:
     `1` - do not check claims (iat, exp, nbf, iss, aud, sub, jti), **BEWARE: DANGEROUS, UNSECURE!!!**
 
     `0` (default) - check claims
+
+- verify\_typ
+
+    **SINCE 0.036**
+
+    `CODE ref` - subroutine (with 'typ' header parameter value passed as argument) should return `true` otherwise verification fails
+
+    `Regexp ref` - 'typ' header parameter value has to match given regexp otherwise verification fails
+
+    `Scalar` - 'typ' header parameter value has to be equal to given string
+
+    `undef` (default) - do not verify 'typ' header parameter
 
 ## encode\_jwt
 
