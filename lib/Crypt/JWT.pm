@@ -163,6 +163,36 @@ sub _add_claims {
   $payload->{nbf} = $now + $args{relative_nbf} if defined $args{relative_nbf};
 }
 
+sub _verify_header {
+  my ($header, %args) = @_;
+
+  # currently we only check "typ" header parameter
+  my $check = $args{verify_typ};
+  return if !defined $check;
+
+  if (exists $header->{typ}) {
+    if (ref $check eq 'Regexp') {
+      my $value = $header->{typ};
+      $value = "" if !defined $value;
+      croak "JWT: typ header re check failed" unless $value =~ $check;
+    }
+    elsif (ref $check eq 'CODE') {
+      croak "JWT: typ header code check failed" unless $check->($header->{typ});
+    }
+    elsif (!ref $check) {
+      my $value = $header->{typ};
+      croak "JWT: typ header scalar check failed" unless defined $value && $value eq $check;
+    }
+    else {
+      croak "JWT: verify_typ must be Regexp, Scalar or CODE";
+    }
+  }
+  else {
+    croak "JWT: typ header required but missing"
+  }
+
+}
+
 sub _verify_claims {
   my ($payload, %args) = @_;
 
@@ -539,6 +569,7 @@ sub _decode_jwe {
   $payload = _payload_unzip($payload, $header->{zip}) if $header->{zip};
   $payload = _payload_dec($payload, $args{decode_payload});
   _verify_claims($payload, %args); # croaks on error
+  _verify_header($header, %args); # croaks on error
   return ($header, $payload);
 }
 
@@ -696,6 +727,7 @@ sub _decode_jws {
   $payload = _payload_dec($payload, $args{decode_payload});
   _verify_claims($payload, %args); # croaks on error
   $header = { %$unprotected_header, %$header }; # merge headers
+  _verify_header($header, %args); # croaks on error
   return ($header, $payload);
 }
 
@@ -764,11 +796,11 @@ sub decode_jwt {
   elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*\.([a-zA-Z0-9_-]*)=*(?:\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*)?$/) {
     if (defined($5) && length($5) > 0) {
         # JWE token (5 segments)
-        ($header, $payload) = Crypt::JWT::_decode_jwe($1, $2, $3, $4, $5, undef, {}, {}, %args);
+        ($header, $payload) = _decode_jwe($1, $2, $3, $4, $5, undef, {}, {}, %args);
     }
     else {
         # JWS token (3 segments)
-        ($header, $payload) = Crypt::JWT::_decode_jws($1, $2, $3, {}, %args);
+        ($header, $payload) = _decode_jws($1, $2, $3, {}, %args);
     }
   }
   elsif ($args{token} =~ /^\s*\{.*?\}\s*$/s) {
@@ -1211,6 +1243,18 @@ Tolerance in seconds related to C<verify_exp>, C<verify_nbf> and C<verify_iat>. 
 C<1> - do not check claims (iat, exp, nbf, iss, aud, sub, jti), B<BEWARE: DANGEROUS, UNSECURE!!!>
 
 C<0> (default) - check claims
+
+=item verify_typ
+
+B<SINCE 0.036>
+
+C<CODE ref> - subroutine (with 'typ' header parameter value passed as argument) should return C<true> otherwise verification fails
+
+C<Regexp ref> - 'typ' header parameter value has to match given regexp otherwise verification fails
+
+C<Scalar> - 'typ' header parameter value has to be equal to given string
+
+C<undef> (default) - do not verify 'typ' header parameter
 
 =back
 

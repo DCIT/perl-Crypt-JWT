@@ -260,4 +260,37 @@ for ([qw/PBES2-HS256+A128KW A128GCM/], ['HS512', '']) {
   is($decoded, $p, "decoded - allow_none/2: alg=>'$alg'");
 }
 
+{
+  my @tokens1 = (
+    encode_jwt(key=>'Secretkey', payload=>{ x => 1, y => 2 }, alg=>'HS512'),
+    encode_jwt(key=>'Secretkey', payload=>{ x => 1, y => 2 }, alg=>'PBES2-HS256+A128KW', enc=>'A128GCM'),
+  );
+  my @tokens2 = (
+    encode_jwt(key=>'Secretkey', payload=>{ x => 1, y => 2 }, alg=>'HS512', extra_headers=>{ typ => "JWS" }),
+    encode_jwt(key=>'Secretkey', payload=>{ x => 1, y => 2 }, alg=>'PBES2-HS256+A128KW', enc=>'A128GCM', extra_headers=>{ typ => "JWS" }),
+  );
+  for my $token (@tokens1) { ## w/o typ header
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>'JWS') };
+    is($decoded, undef, "typ_test/a: decoded - missing typ header (scalar)");
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>qr/^JWS$/) };
+    is($decoded, undef, "typ_test/a: decoded - missing typ header (re)");
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>sub { return 1 }) };
+    is($decoded, undef, "typ_test/a: decoded - missing typ header (sub)");
+  }
+  for my $token (@tokens2) { ## with typ header
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>'JWS') };
+    is($decoded->{x}, 1, "typ_test/b: typ (scalar)");
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>'JXY') };
+    is($decoded, undef, "typ_test/b: typ (scalar) FAIL");
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>qr/^JWS$/) };
+    is($decoded->{x}, 1, "typ_test/b: typ (re)");
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>qr/JXY/) };
+    is($decoded, undef, "typ_test/b: typ (re) FAIL");
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>sub { return $_[0] eq 'JWS' }) };
+    is($decoded->{x}, 1, "typ_test/b: typ (sub)");
+    $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_typ=>sub { return $_[0] eq 'JXY' }) };
+    is($decoded, undef, "typ_test/b: typ (sub) FAIL");
+  }
+}
+
 done_testing;
