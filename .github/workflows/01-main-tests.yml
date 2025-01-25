@@ -1,4 +1,4 @@
-name: 01-main-tests
+name: 01-main
 
 on:
   push:
@@ -9,32 +9,16 @@ on:
   pull_request:
 
 jobs:
-  ubuntu:
+  linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        perl-version:
-          - '5.8'
-          - '5.10'
-          - '5.12'
-          - '5.14'
-          - '5.16'
-          - '5.18'
-          - '5.20'
-          - '5.22'
-          - '5.24'
-          - '5.26'
-          - '5.28'
-          - '5.30'
-          - '5.32'
-          - '5.34'
-          - '5.36'
-          - '5.38'
     container:
-      image: perl:${{ matrix.perl-version }}
+      image: perl:latest
     steps:
-      - uses: actions/checkout@v3
-      - run: perl -V
+      - uses: actions/checkout@v4
+      - name: perl -V
+        run: perl -V
+      - name: gcc -v
+        run: gcc -v
       - name: Install dependencies
         run: |
           cpanm -n --installdeps .
@@ -45,17 +29,18 @@ jobs:
         env:
           AUTHOR_MODE: 1
       - name: Run tests
-        run: prove -b t
+        run: prove -j4 -b t
         env:
           AUTHOR_MODE: 1
 
   mac:
     runs-on: macOS-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Perl
         run: brew install perl
-      - run: perl -V
+      - name: perl -V
+        run: perl -V
       - name: Install Dependencies
         run: curl --silent -L https://cpanmin.us | perl - --notest --installdeps .
       - name: Run build
@@ -65,7 +50,7 @@ jobs:
         env:
           AUTHOR_MODE: 0
       - name: Run tests
-        run: prove -b t
+        run: prove -j4 -b t
         env:
           AUTHOR_MODE: 0
 
@@ -76,14 +61,16 @@ jobs:
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Perl
         run: |
           choco install strawberryperl
           echo "C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - run: perl -V
+      - name: perl -V
+        run: perl -V
       - name: Install Dependencies
-        run: curl --silent -L https://cpanmin.us | perl - --notest --installdeps .
+        run: |
+          cpanm --installdeps .
       - name: Run build
         run: |
           perl Makefile.PL
@@ -91,37 +78,6 @@ jobs:
         env:
           AUTHOR_MODE: 0
       - name: Run tests
-        run: prove -b t
-        env:
-          AUTHOR_MODE: 0
-
-  cygwin:
-    runs-on: windows-latest
-    steps:
-      - name: Set git to use LF
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-      - name: Set up Cygwin
-        uses: egor-tensin/setup-cygwin@v4
-        with:
-            packages: perl_base perl-ExtUtils-MakeMaker perl-JSON make gcc-g++ bash libcrypt-devel libnsl-devel
-      - uses: actions/checkout@v3
-      - run: perl -V
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - run: cpan App::cpanminus
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - name: Install Dependencies
-        run: cd $GITHUB_WORKSPACE; cpanm --verbose --notest --installdeps .
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - name: perl Makefile.PL
-        run: cd $GITHUB_WORKSPACE; perl Makefile.PL
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - name: make
-        run: cd $GITHUB_WORKSPACE; make -j4
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
-      - name: make test
-        run: cd $GITHUB_WORKSPACE; prove -b t
-        shell: C:\tools\cygwin\bin\bash.exe --login --norc -eo pipefail -o igncr '{0}'
+        run: prove -j4 -b t
         env:
           AUTHOR_MODE: 0

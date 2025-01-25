@@ -9,18 +9,24 @@ image:
 
 environment:
   matrix:
+    - perl_type: strawberry_gh
+      perl_version: 5.40        #gcc 13.2.0
+    - perl_type: strawberry_gh
+      perl_version: 5.38        #gcc 13.1.0
+    - perl_type: strawberry_gh
+      perl_version: 5.36        #gcc 13.1.0
     - perl_type: strawberry
-      perl_version: 5.32.0.1    #gcc 8.3.0
+      perl_version: 5.32.1.1    #gcc 8.3.0
       perl_bits: 32
     - perl_type: strawberry
-      perl_version: 5.32.0.1    #gcc 8.3.0
+      perl_version: 5.32.1.1    #gcc 8.3.0
       perl_bits: 64
-    - perl_type: strawberry
-      perl_version: 5.30.3.1    #gcc 8.3.0
-      perl_bits: 32
-    - perl_type: strawberry
-      perl_version: 5.30.3.1    #gcc 8.3.0
-      perl_bits: 64
+#    - perl_type: strawberry
+#      perl_version: 5.30.3.1    #gcc 8.3.0
+#      perl_bits: 32
+#    - perl_type: strawberry
+#      perl_version: 5.30.3.1    #gcc 8.3.0
+#      perl_bits: 64
     - perl_type: strawberry     #gcc 7.1.0
       perl_version: 5.28.2.1
       perl_bits: 32
@@ -71,8 +77,8 @@ environment:
       perl_bits: 64
 #    - perl_type: strawberry_old
 #      perl_version: 5.12.3.0    #gcc 4.4.3
-#    - perl_type: strawberry_old
-#      perl_version: 5.10.1.2    #gcc 3.4.5
+    - perl_type: strawberry_old
+      perl_version: 5.10.1.2    #gcc 3.4.5
 #    - perl_type: cygwin64       #we already run cygwin tests via github actions
 #    - perl_type: cygwin32       #stopped working
 
@@ -81,12 +87,17 @@ init:
   - reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1
 
 install:
-  - cinst -y wget
+  - ps: |
+      $versions = choco search strawberryperl -e
+      Write-Host "Available Strawberry Perl versions:"
+      $versions | ForEach-Object { Write-Host $_ }
+  - ps: choco install wget -y --no-progress
   - call .appveyor.cmd perl_setup
   - set MAKEFLAGS=-j4
   - set AUTHOR_MODE=0
+  - 'gcc -v'
   - '%perl% -V'
-  - '%cpanm% --notest --installdeps --with-recommends .'
+  - '%cpanm% --verbose --notest --installdeps --with-recommends .'
 
 build_script:
   - '%perl% Makefile.PL'
