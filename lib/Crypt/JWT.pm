@@ -244,8 +244,34 @@ sub _verify_claims {
     }
   }
 
-  ### iss, sub, aud, jti
-  foreach my $claim (qw(iss sub aud jti)) {
+  ### aud
+  if (defined $args{verify_aud}) {
+    my $check = $args{verify_aud};
+    if (exists $payload->{aud}) {
+      my $match = 0;
+      # aud claim is a bit special as it can be either a string or an array of strings
+      my @aud_list = ref $payload->{aud} eq 'ARRAY' ? @{$payload->{aud}} : ( $payload->{aud} );
+      for my $value (@aud_list) {
+        if (ref $check eq 'Regexp') {
+          $value = "" if !defined $value;
+          $match = 1 if $value =~ $check;
+        }
+        elsif (ref $check eq 'CODE') {
+          $match = 1 if $check->($value);
+        }
+        elsif (!ref $check) {
+          $match = 1 if defined $value && $value eq $check;
+        }
+      }
+      croak "JWT: aud claim check failed" if !$match;
+    }
+    else {
+      croak "JWT: aud claim required but missing"
+    }
+  }
+
+  ### iss, sub, jti
+  foreach my $claim (qw(iss sub jti)) {
     my $check = $args{"verify_$claim"};
     next unless (defined $check);
 
@@ -1183,6 +1209,9 @@ C<Regexp ref> - 'aud' claim value has to match given regexp otherwise verificati
 C<Scalar> - 'aud' claim value has to be equal to given string (since 0.029)
 
 C<undef> (default) - do not verify 'aud' claim
+
+B<SINCE 0.036> we handle 'aud' claim when it contains an array of strings. In this case, the check should succeed if at least one
+value from the array matches. All checks (CODE, Regexp, Scalar) are performed individually against each member of the array of strings.
 
 =item verify_sub
 

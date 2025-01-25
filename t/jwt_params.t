@@ -293,4 +293,20 @@ for ([qw/PBES2-HS256+A128KW A128GCM/], ['HS512', '']) {
   }
 }
 
+{
+  $token = encode_jwt(key=>'Secretkey', payload=>{ aud => ['A1','A2'], x => 1, y => 2 }, alg=>'HS512'),
+  $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_aud => 'A1') };
+  is($decoded->{x}, 1, "aud_list: scalar");
+  $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_aud => qr/^(A1|XYZ)$/) };
+  is($decoded->{x}, 1, "aud_list: re");
+  $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_aud => sub { $_[0] eq 'A1' }) };
+  is($decoded->{x}, 1, "aud_list: sub");
+  $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_aud => 'A9') };
+  is($decoded, undef, "aud_list: scalar FAIL");
+  $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_aud => qr/^A9$/) };
+  is($decoded, undef, "aud_list: re FAIL");
+  $decoded = eval { decode_jwt(key=>'Secretkey', token=>$token, verify_aud => sub { $_[0] eq 'A9' }) };
+  is($decoded, undef, "aud_list: sub FAIL");
+}
+
 done_testing;
