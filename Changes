@@ -1,5 +1,9 @@
 Changes for Crypt-JWT distribution
 
+0.036   2025-XX-XX
+        - fix #35 support aud claim as an array of strings
+        - added verify_typ - verify 'typ' header parameter
+
 0.035   2023-10-03
         - PR #37 Speed up decode_jwt
 
