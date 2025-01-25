@@ -762,10 +762,11 @@ sub decode_jwt {
     croak "JWT: missing token";
   }
   elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*\.([a-zA-Z0-9_-]*)=*(?:\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*)?$/) {
-    if (length($5)) {
+    if (defined($5) && length($5) > 0) {
         # JWE token (5 segments)
         ($header, $payload) = Crypt::JWT::_decode_jwe($1, $2, $3, $4, $5, undef, {}, {}, %args);
-    } else {
+    }
+    else {
         # JWS token (3 segments)
         ($header, $payload) = Crypt::JWT::_decode_jws($1, $2, $3, {}, %args);
     }
