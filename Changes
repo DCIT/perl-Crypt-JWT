@@ -1,6 +1,6 @@
 Changes for Crypt-JWT distribution
 
-0.036   2025-XX-XX
+0.036   2025-01-26
         - fix #35 support aud claim as an array of strings
         - added verify_typ - verify 'typ' header parameter
 
