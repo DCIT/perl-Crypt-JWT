@@ -1288,6 +1288,12 @@ C<Scalar> - 'typ' header parameter value has to be equal to given string
 
 C<undef> (default) - do not verify 'typ' header parameter
 
+=item keep_padding
+
+C<0> (default) - ignore Base64 padding characters when validating signature
+
+C<1> - take account of Base64 padding characters when validating signature
+
 =back
 
 =head2 encode_jwt
