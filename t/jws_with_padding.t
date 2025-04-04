@@ -4,7 +4,7 @@ use Test::More;
 
 use Crypt::JWT qw(decode_jwt);
 
-my $ecc256Pub = <<EOF;
+my $ecc256Pub = <<'EOF';
 -----BEGIN PUBLIC KEY-----
 MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////wAAAAEAAAAA
 AAAAAAAAAAD///////////////8wRAQg/////wAAAAEAAAAAAAAAAAAAAAD/////
