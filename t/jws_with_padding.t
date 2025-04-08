@@ -30,7 +30,7 @@ EOF
 # EOF
 
 my $token = 'eyJhbGciOiJFUzI1NiJ9.eyJoZWxsbyI6IndvcmxkIn0=.FOGAeCGvhKs-sQPUWQEmpdM0kC_yfi986ZW7XoT4pnlTKRLn43wDw6zVHdzEFFuy_JgsQFGYCfJQQds-5FF05w==';
-my $decoded = decode_jwt(token => $token, keep_padding => 1, decode_payload => 0, key => \$ecc256Pub);
+my $decoded = decode_jwt(token => $token, tolerate_padding => 1, decode_payload => 0, key => \$ecc256Pub);
 is $decoded, '{"hello":"world"}';
 
 done_testing;

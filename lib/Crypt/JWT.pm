@@ -819,7 +819,7 @@ sub decode_jwt {
   if (!$args{token}) {
     croak "JWT: missing token";
   }
-  my $token_re = $args{keep_padding}
+  my $token_re = $args{tolerate_padding}
     ? qr/^([a-zA-Z0-9_-]+=*)\.([a-zA-Z0-9_-]*=*)\.([a-zA-Z0-9_-]*=*)(?:\.([a-zA-Z0-9_-]+=*)\.([a-zA-Z0-9_-]+=*))?$/
     : qr/^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*\.([a-zA-Z0-9_-]*)=*(?:\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*)?$/;
   if ($args{token} =~ $token_re) {
@@ -1288,7 +1288,7 @@ C<Scalar> - 'typ' header parameter value has to be equal to given string
 
 C<undef> (default) - do not verify 'typ' header parameter
 
-=item keep_padding
+=item tolerate_padding
 
 C<0> (default) - ignore Base64 padding characters when validating signature
 
