@@ -819,7 +819,10 @@ sub decode_jwt {
   if (!$args{token}) {
     croak "JWT: missing token";
   }
-  elsif ($args{token} =~ /^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*\.([a-zA-Z0-9_-]*)=*(?:\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*)?$/) {
+  my $token_re = $args{tolerate_padding}
+    ? qr/^([a-zA-Z0-9_-]+=*)\.([a-zA-Z0-9_-]*=*)\.([a-zA-Z0-9_-]*=*)(?:\.([a-zA-Z0-9_-]+=*)\.([a-zA-Z0-9_-]+=*))?$/
+    : qr/^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*\.([a-zA-Z0-9_-]*)=*(?:\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*)?$/;
+  if ($args{token} =~ $token_re) {
     if (defined($5) && length($5) > 0) {
         # JWE token (5 segments)
         ($header, $payload) = _decode_jwe($1, $2, $3, $4, $5, undef, {}, {}, %args);
@@ -1284,6 +1287,12 @@ C<Regexp ref> - 'typ' header parameter value has to match given regexp otherwise
 C<Scalar> - 'typ' header parameter value has to be equal to given string
 
 C<undef> (default) - do not verify 'typ' header parameter
+
+=item tolerate_padding
+
+C<0> (default) - ignore Base64 padding characters when validating signature
+
+C<1> - take account of Base64 padding characters when validating signature
 
 =back
 
