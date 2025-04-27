@@ -1,5 +1,10 @@
 Changes for Crypt-JWT distribution
 
+0.037   2025-04-27
+        - fix #43 Fails to decode JWT from AWS Application Load Balancers
+        - fix #44 Allow decoding JWS with Base64 padding characters
+        - added tolerate_padding parameter for decode_jwt
+
 0.036   2025-01-26
         - fix #35 support aud claim as an array of strings
         - added verify_typ - verify 'typ' header parameter
