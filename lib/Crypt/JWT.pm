@@ -327,9 +327,6 @@ sub _payload_unzip {
     croak "JWT: inflate failed" unless $output;
     $payload = $output;
   }
-  else {
-    croak "JWT: unknown zip method '$z'";
-  }
   return $payload;
 }
 
