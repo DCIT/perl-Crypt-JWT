@@ -167,6 +167,17 @@ sub _add_claims {
   $payload->{nbf} = $now + $args{relative_nbf} if defined $args{relative_nbf};
 }
 
+sub _check_accepted {
+  my ($what, $value, $check) = @_;
+  return unless defined $check;
+  my $r = ref $check;
+  if    ($r eq 'Regexp') { croak "JWT: $what '$value' does not match accepted_$what" if $value !~ $check }
+  elsif ($r eq 'ARRAY')  { my %ok = map { $_ => 1 } @$check;
+                           croak "JWT: $what '$value' not in accepted_$what" unless $ok{$value} }
+  elsif (!$r)            { croak "JWT: $what '$value' not accepted_$what" if $value ne $check }
+  else                   { croak "JWT: accepted_$what must be Regexp, ARRAY ref, or Scalar (got $r)" }
+}
+
 sub _verify_header {
   my ($header, %args) = @_;
 
@@ -591,23 +602,8 @@ sub _decode_jwe {
   }
   croak "JWE: missing key" if !defined $key;
 
-  my $aa = $args{accepted_alg};
-  if (ref($aa) eq 'Regexp') {
-    croak "JWE: alg '$header->{alg}' does not match accepted_alg" if $header->{alg} !~ $aa;
-  }
-  elsif ($aa && (ref($aa) eq 'ARRAY' || !ref($aa))) {
-    my %acca = ref $aa ? map { $_ => 1 } @$aa : ( $aa => 1 );
-    croak "JWE: alg '$header->{alg}' not in accepted_alg" if !$acca{$header->{alg}};
-  }
-
-  my $ae = $args{accepted_enc};
-  if (ref($ae) eq 'Regexp') {
-    croak "JWE: enc '$header->{enc}' does not match accepted_enc" if $header->{enc} !~ $ae;
-  }
-  elsif ($ae && (ref($ae) eq 'ARRAY' || !ref($ae))) {
-    my %acce = ref $ae ? map { $_ => 1 } @$ae : ( $ae => 1 );
-    croak "JWE: enc '$header->{enc}' not in accepted_enc" if !$acce{$header->{enc}};
-  }
+  _check_accepted('alg', $header->{alg}, $args{accepted_alg});
+  _check_accepted('enc', $header->{enc}, $args{accepted_enc});
 
   $header = { %$shared_unprotected, %$unprotected, %$header }; # merge headers
   my $cek = _decrypt_jwe_cek($ecek, $key, $header);
@@ -727,17 +723,7 @@ sub _decode_jws {
     croak "JWS: alg 'none' not allowed" if $alg eq 'none' && !$args{allow_none};
     croak "JWS: alg 'none' expects no signature" if $alg eq 'none' && defined $b64u_sig && length($b64u_sig) > 0;
 
-    my $aa = $args{accepted_alg};
-    if (ref $aa eq 'Regexp') {
-      croak "JWS: alg '$alg' does not match accepted_alg" if $alg !~ $aa;
-    }
-    elsif (ref $aa eq 'ARRAY') {
-      my %acca = map { $_ => 1 } @$aa;
-      croak "JWS: alg '$alg' not in accepted_alg" if !$acca{$alg};
-    }
-    elsif (defined $aa) {
-      croak "JWS: alg '$alg' not accepted_alg" if $aa ne $alg;
-    }
+    _check_accepted('alg', $alg, $args{accepted_alg});
 
     if ($alg ne 'none') {
       my $key;
