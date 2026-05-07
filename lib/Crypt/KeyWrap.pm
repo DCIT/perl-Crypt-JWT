@@ -239,12 +239,12 @@ sub _concat_kdf {
   $count++ if ($key_size % $hsize) > 0;
   my $data = '';
   for my $i (1..$count) {
-    $data .= digest_data('SHA256', pack("N", 1) .
-                                   $shared_secret .
-                                   pack("N", length($algorithm)) . $algorithm .
-                                   pack("N", length($apu)) . $apu .
-                                   pack("N", length($apv)) . $apv .
-                                   pack("N", 8 *$key_size));
+    $data .= digest_data($hash_name, pack("N", $i) .
+                                     $shared_secret .
+                                     pack("N", length($algorithm)) . $algorithm .
+                                     pack("N", length($apu)) . $apu .
+                                     pack("N", length($apv)) . $apv .
+                                     pack("N", 8 *$key_size));
   }
   return substr($data, 0, $key_size);
 }
