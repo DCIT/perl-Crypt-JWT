@@ -11,7 +11,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
 
 use Carp;
-use Crypt::Misc qw(decode_b64u encode_b64u);
+use Crypt::Misc qw(decode_b64u encode_b64u slow_eq);
 use JSON qw(decode_json encode_json);
 use Crypt::PK::RSA;
 use Crypt::PK::ECC;
@@ -513,7 +513,7 @@ sub _decrypt_jwe_payload {
     my $mac = hmac($hash, $mac_key, $mac_input);
     my $sig_len = length($mac) / 2;
     my $sig = substr($mac, 0, $sig_len);
-    croak "JWE: tag mismatch" unless $sig eq $tag;
+    croak "JWE: tag mismatch" unless slow_eq($sig, $tag);
     my $m = Crypt::Mode::CBC->new('AES');
     my $pt = $m->decrypt($ct, $aes_key, $iv);
     return $pt;
@@ -655,7 +655,7 @@ sub _verify_jws {
   }
   elsif ($alg =~ /^HS(256|384|512)$/) { # HMAC integrity
     $key = _prepare_oct_key($key);
-    return 1 if $sig eq hmac("SHA$1", $key, $data);
+    return 1 if slow_eq($sig, hmac("SHA$1", $key, $data));
   }
   elsif ($alg =~ /^RS(256|384|512)/) { # RSA+PKCS1-V1_5 signatures
     my $hash = "SHA$1";
