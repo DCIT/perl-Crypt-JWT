@@ -28,6 +28,10 @@ use Scalar::Util qw(looks_like_number);
 our $MAX_PBES2_ITER     = 3_000_000;         # max accepted PBES2 'p2c' (iteration count)
 our $MAX_INFLATED_SIZE  = 10 * 1024 * 1024;  # max accepted size of payload after 'zip' inflation
 
+# Compact-serialization token shape; precompiled to avoid rebuilding per decode_jwt() call.
+my $TOKEN_RE_STRICT  = qr/^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*\.([a-zA-Z0-9_-]*)=*(?:\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*)?$/;
+my $TOKEN_RE_PADDING = qr/^([a-zA-Z0-9_-]+=*)\.([a-zA-Z0-9_-]*=*)\.([a-zA-Z0-9_-]*=*)(?:\.([a-zA-Z0-9_-]+=*)\.([a-zA-Z0-9_-]+=*))?$/;
+
 # JWS: https://tools.ietf.org/html/rfc7515
 # JWE: https://tools.ietf.org/html/rfc7516
 # JWK: https://tools.ietf.org/html/rfc7517
@@ -833,9 +837,7 @@ sub decode_jwt {
   if (!$args{token}) {
     croak "JWT: missing token";
   }
-  my $token_re = $args{tolerate_padding}
-    ? qr/^([a-zA-Z0-9_-]+=*)\.([a-zA-Z0-9_-]*=*)\.([a-zA-Z0-9_-]*=*)(?:\.([a-zA-Z0-9_-]+=*)\.([a-zA-Z0-9_-]+=*))?$/
-    : qr/^([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]*)=*\.([a-zA-Z0-9_-]*)=*(?:\.([a-zA-Z0-9_-]+)=*\.([a-zA-Z0-9_-]+)=*)?$/;
+  my $token_re = $args{tolerate_padding} ? $TOKEN_RE_PADDING : $TOKEN_RE_STRICT;
   if ($args{token} =~ $token_re) {
     if (defined($5) && length($5) > 0) {
         # JWE token (5 segments)
