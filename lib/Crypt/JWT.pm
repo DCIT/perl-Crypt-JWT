@@ -483,7 +483,12 @@ sub _encrypt_jwe_payload {
     my $m = Crypt::Mode::CBC->new('AES');
     my $ct = $m->encrypt($payload, $aes_key, $iv);
     my $aad_len = length($aad);
-    my $mac_input = $aad . $iv . $ct . pack('N2', ($aad_len / 2147483647)*8, ($aad_len % 2147483647)*8);
+    # RFC 7518 5.2.2.1: AL = AAD length in bits as 64-bit big-endian.
+    # Split aad_len*8 into two 32-bit halves; both intermediate values
+    # stay within 32-bit range, so this is safe on 32-bit Perl too.
+    my $al_hi = $aad_len >> 29;
+    my $al_lo = ($aad_len & 0x1FFFFFFF) << 3;
+    my $mac_input = $aad . $iv . $ct . pack('N2', $al_hi, $al_lo);
     my $mac = hmac($hash, $mac_key, $mac_input);
     my $sig_len = length($mac) / 2;
     my $sig = substr($mac, 0, $sig_len);
@@ -509,7 +514,12 @@ sub _decrypt_jwe_payload {
     my $aes_key = substr($cek, $key_len, $key_len);
     croak "JWE: wrong AES key length ($key_len vs. $size)" unless $key_len == $size;
     my $aad_len = length($aad); # AAD == original encoded header
-    my $mac_input = $aad . $iv . $ct . pack('N2', ($aad_len / 2147483647)*8, ($aad_len % 2147483647)*8);
+    # RFC 7518 5.2.2.1: AL = AAD length in bits as 64-bit big-endian.
+    # Split aad_len*8 into two 32-bit halves; both intermediate values
+    # stay within 32-bit range, so this is safe on 32-bit Perl too.
+    my $al_hi = $aad_len >> 29;
+    my $al_lo = ($aad_len & 0x1FFFFFFF) << 3;
+    my $mac_input = $aad . $iv . $ct . pack('N2', $al_hi, $al_lo);
     my $mac = hmac($hash, $mac_key, $mac_input);
     my $sig_len = length($mac) / 2;
     my $sig = substr($mac, 0, $sig_len);
