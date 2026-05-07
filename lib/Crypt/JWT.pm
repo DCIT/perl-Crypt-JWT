@@ -945,6 +945,15 @@ Mandatory argument, a string with either JWS or JWE JSON Web Token.
 A key used for token decryption (JWE) or token signature validation (JWS).
 The value depends on the C<alg> token header value.
 
+B<SECURITY:> a bare scalar is always interpreted as a raw octet string
+(HMAC secret, AES key, etc.). PEM, DER, and JWK-JSON key material B<must>
+be passed as a SCALAR ref (C<\$pem>) or as an appropriate key object - never
+as a bare string. If a public-key string is mistakenly passed as a bare
+scalar and C<accepted_alg> is not set, an attacker who flips the token's
+C<alg> to C<HS*> can forge a signature using the public-key bytes as the
+HMAC secret (the so-called "alg confusion" attack). For defense in depth,
+also restrict the algorithm with C<accepted_alg>.
+
  JWS alg header      key value
  ------------------  ----------------------------------
  none                no key required
@@ -1152,6 +1161,11 @@ C<1> - do not check signature on JWS tokens, B<BEWARE: DANGEROUS, UNSECURE!!!>
 C<0> (default) - check signature on JWS tokens
 
 =item accepted_alg
+
+B<SECURITY:> strongly recommended. Pinning C<accepted_alg> to the algorithm
+(or family) you actually expect prevents "alg confusion" attacks where a
+forged token swaps the C<alg> header to a different family - see the
+SECURITY note under C<key>.
 
 C<undef> (default) means accept all 'alg' algorithms except 'none' (for accepting 'none' use C<allow_none>)
 
