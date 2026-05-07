@@ -346,7 +346,12 @@ Crypt::KeyWrap - Key management/wrapping algorithms defined in RFC7518 (JWA)
 
 =head1 DESCRIPTION
 
-Implements key management algorithms defined in L<https://tools.ietf.org/html/rfc7518>
+Implements key management algorithms defined in L<https://tools.ietf.org/html/rfc7518>.
+
+These functions are the low-level primitives that L<Crypt::JWT> dispatches
+to when handling JWE C<alg> values. If you are building or consuming JWE
+tokens, use L<Crypt::JWT> instead - it covers algorithm selection, header
+handling, and serialization on top of these wrappers.
 
 BEWARE: experimental, interface of this module might change!
 
@@ -604,7 +609,7 @@ Value C<$cek> - binary octets.
 
 =head1 SEE ALSO
 
-L<Crypt::Cipher::AES>, L<Crypt::AuthEnc::GCM>, L<Crypt::PK::RSA>, L<Crypt::KeyDerivation>
+L<Crypt::JWT>, L<Crypt::Cipher::AES>, L<Crypt::AuthEnc::GCM>, L<Crypt::PK::RSA>, L<Crypt::KeyDerivation>
 
 =head1 LICENSE
 

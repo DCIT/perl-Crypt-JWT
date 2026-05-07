@@ -1282,11 +1282,24 @@ C<undef> (default) - do not verify 'jti' claim
 
 =item verify_iat
 
-C<undef> - Issued At 'iat' claim must be valid (not in the future) if present
+B<NOTE:> C<verify_iat> is asymmetric with C<verify_nbf>/C<verify_exp>.
+Omitting the key entirely (the true default) means "no iat check".
+Passing C<verify_iat =E<gt> undef> is B<not> the same as omitting it - it
+explicitly enables the present-but-must-be-valid check below.
 
-C<0> (default) - ignore 'iat' claim
+C<undef> - "validate-if-present" mode: if the payload contains an 'iat'
+claim it must not be in the future (modulo C<leeway>), otherwise
+verification croaks; if 'iat' is absent, no error is raised. Useful when
+you want to honor an issuer's 'iat' when they provide one but not insist
+on it being there.
 
-C<1> - require valid 'iat' claim
+C<0> - ignore 'iat' claim (same as omitting the key)
+
+C<1> - require valid 'iat' claim: payload must contain 'iat' and it must
+not be in the future (modulo C<leeway>); croaks otherwise.
+
+If the C<verify_iat> key is not passed at all, no iat check is performed
+regardless of whether the payload contains an 'iat' claim.
 
 =item verify_nbf
 
@@ -1328,9 +1341,18 @@ C<undef> (default) - do not verify 'typ' header parameter
 
 =item tolerate_padding
 
-C<0> (default) - ignore Base64 padding characters when validating signature
+Both modes accept tokens whose segments include trailing C<=> Base64 padding
+characters (which are not produced by spec-compliant encoders); they differ
+only in what gets fed to the signature check.
 
-C<1> - take account of Base64 padding characters when validating signature
+C<0> (default) - strip C<=> padding from each segment B<before> computing
+the signature input. Compatible with the strict RFC 7515 producer (no
+padding signed). If the producer signed the I<padded> form, signature
+verification will fail in this mode.
+
+C<1> - keep C<=> padding as part of the signature input. Required to verify
+tokens produced by libraries (some Java implementations) that include
+padding in the bytes that were signed.
 
 =back
 
