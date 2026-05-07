@@ -20,3 +20,4 @@ MANIFEST.bak
 MANIFEST
 Crypt-JWT-*
 Crypt-KeyWrap-*
+/t/wycheproof-repo/
