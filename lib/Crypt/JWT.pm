@@ -605,7 +605,14 @@ sub _decode_jwe {
   _check_accepted('alg', $header->{alg}, $args{accepted_alg});
   _check_accepted('enc', $header->{enc}, $args{accepted_enc});
 
-  $header = { %$shared_unprotected, %$unprotected, %$header }; # merge headers
+  # SECURITY INVARIANT: merge order matters. The protected header (%$header)
+  # MUST come last so its values win over the unprotected/shared-unprotected
+  # ones (which travel outside the AEAD and are attacker-mutable). Crypto-
+  # critical fields - 'alg', 'enc', 'epk', 'p2c', 'p2s', 'iv', 'tag', 'zip',
+  # 'apu', 'apv' - are read from this merged hash by _decrypt_jwe_cek and
+  # below; flipping the order, or letting _decrypt_jwe_cek run against an
+  # attacker-controlled header, breaks the JWE security model.
+  $header = { %$shared_unprotected, %$unprotected, %$header };
   my $cek = _decrypt_jwe_cek($ecek, $key, $header);
   my $aad = defined $b64u_aad ? "$b64u_header.$b64u_aad" : $b64u_header;
   my $payload = _decrypt_jwe_payload($cek, $header->{enc}, $aad, $ct, $iv, $tag);
