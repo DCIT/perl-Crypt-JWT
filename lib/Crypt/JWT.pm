@@ -25,9 +25,8 @@ use Compress::Raw::Zlib;
 use Scalar::Util qw(looks_like_number);
 
 # DoS guards on decode
-our $MAX_PBES2_ITER     = 30_000_000;        # max accepted PBES2 'p2c' (iteration count)
-our $MAX_PBES2_SALT_LEN = 200_000;           # max accepted PBES2 'p2s' decoded length
-our $MAX_DEFLATED_SIZE  = 5 * 1024 * 1024;   # max accepted size of payload after 'zip' inflation
+our $MAX_PBES2_ITER     = 3_000_000;         # max accepted PBES2 'p2c' (iteration count)
+our $MAX_INFLATED_SIZE  = 10 * 1024 * 1024;  # max accepted size of payload after 'zip' inflation
 
 # JWS: https://tools.ietf.org/html/rfc7515
 # JWE: https://tools.ietf.org/html/rfc7516
@@ -327,13 +326,13 @@ sub _payload_unzip {
   my ($payload, $z) = @_;
   if ($z eq "DEF") {
     my $d = Compress::Raw::Zlib::Inflate->new(
-      -Bufsize     => $MAX_DEFLATED_SIZE,
+      -Bufsize     => $MAX_INFLATED_SIZE,
       -WindowBits  => -&MAX_WBITS(),
       -LimitOutput => 1,
     );
     my $output = '';
     my $status = $d->inflate($payload, $output);
-    croak "JWT: inflated payload exceeds limit ($MAX_DEFLATED_SIZE bytes)" if $status == Z_BUF_ERROR;
+    croak "JWT: inflated payload exceeds limit ($MAX_INFLATED_SIZE bytes)" if $status == Z_BUF_ERROR;
     croak "JWT: inflate failed (status=$status)" if $status != Z_STREAM_END;
     $payload = $output;
   }
@@ -441,9 +440,7 @@ sub _decrypt_jwe_cek {
   elsif ($alg =~ /^PBES2-HS(512|384|256)\+A(128|192|256)KW$/) {
     my $p2c = $hdr->{p2c};
     croak "JWE: invalid p2c" unless looks_like_number($p2c) && $p2c >= 1 && $p2c <= $MAX_PBES2_ITER;
-    my $salt = decode_b64u($hdr->{p2s});
-    croak "JWE: invalid p2s" unless defined $salt && length($salt) >= 8 && length($salt) <= $MAX_PBES2_SALT_LEN;
-    return pbes2_key_unwrap(_prepare_oct_key($key), $ecek, $alg, $salt, $p2c);
+    return pbes2_key_unwrap(_prepare_oct_key($key), $ecek, $alg, decode_b64u($hdr->{p2s}), $p2c);
   }
   elsif ($alg =~ /^RSA(-OAEP|-OAEP-256|1_5)$/) {
     $key = _prepare_rsa_key($key);
