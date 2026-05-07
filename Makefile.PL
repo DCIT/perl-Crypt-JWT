@@ -13,7 +13,7 @@ WriteMakefile(
     PREREQ_PM => {
       'JSON'                => 0,
       'Exporter'            => '5.57',     # we need: use Exporter 'import';
-      'Compress::Raw::Zlib' => 0,
+      'Compress::Raw::Zlib' => '2.057',  # we need: -LimitOutput
       'CryptX'              => '0.067',    # we need: Ed25519+X25519
       'Scalar::Util'        => 0,
       'Test::More'          => '0.88',     # we need: done_testing
