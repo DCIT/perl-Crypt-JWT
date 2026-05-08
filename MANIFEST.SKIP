@@ -39,3 +39,6 @@
 # Avoid our own built files.
 \ACrypt-JWT-
 \ACrypt-KeyWrap-
+
+# Avoid wycheproof testsuite
+^t/wycheproof.*$

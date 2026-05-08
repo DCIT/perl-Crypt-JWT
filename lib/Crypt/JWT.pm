@@ -3,7 +3,7 @@ package Crypt::JWT;
 use strict;
 use warnings;
 
-our $VERSION = '0.038';
+our $VERSION = '0.037_1';
 
 use Exporter 'import';
 our %EXPORT_TAGS = ( all => [qw(decode_jwt encode_jwt)] );
@@ -711,7 +711,7 @@ sub _decode_jwe {
   # For 'dir' the JWK is used directly as the CEK, so its 'alg' field (when
   # present) names the content-encryption algorithm (the JWE 'enc'), not
   # 'dir' itself. RFC 7518 sec 3.4.2 / common JWK convention.
-  my $effective_alg = $header->{alg} eq 'dir' ? $header->{enc} : $header->{alg};
+  my $effective_alg = defined $header->{alg} && $header->{alg} eq 'dir' ? $header->{enc} : $header->{alg};
   _check_jwk_constraints($key, $effective_alg, 'JWE');
 
   # SECURITY INVARIANT: merge order matters. The protected header (%$header)
@@ -1785,4 +1785,4 @@ This program is free software; you can redistribute it and/or modify it under th
 
 =head1 COPYRIGHT
 
-Copyright (c) 2015-2025 DCIT, a.s. L<https://www.dcit.cz> / Karel Miko
+Copyright (c) 2015-2026 DCIT, a.s. L<https://www.dcit.cz> / Karel Miko

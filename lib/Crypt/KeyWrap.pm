@@ -3,7 +3,7 @@ package Crypt::KeyWrap;
 use strict;
 use warnings;
 
-our $VERSION = '0.038';
+our $VERSION = '0.037_1';
 
 use Exporter 'import';
 our %EXPORT_TAGS = ( all => [qw(aes_key_wrap aes_key_unwrap gcm_key_wrap gcm_key_unwrap pbes2_key_wrap pbes2_key_unwrap ecdh_key_wrap ecdh_key_unwrap ecdhaes_key_wrap ecdhaes_key_unwrap rsa_key_wrap rsa_key_unwrap)] );
@@ -640,4 +640,4 @@ This program is free software; you can redistribute it and/or modify it under th
 
 =head1 COPYRIGHT
 
-Copyright (c) 2015-2025 DCIT, a.s. L<https://www.dcit.cz> / Karel Miko
+Copyright (c) 2015-2026 DCIT, a.s. L<https://www.dcit.cz> / Karel Miko
