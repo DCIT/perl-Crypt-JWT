@@ -217,6 +217,17 @@ for ([qw/PBES2-HS256+A128KW A128GCM/], ['HS512', '']) {
     $decoded = eval { decode_jwt(key=>$k, token=>$token, leeway=>20) };
     is($decoded->{data}, 'Hello', "decoded - exp/5: alg=>'$alg'");
 
+    $token = encode_jwt(key=>$k, payload=>{nbf=>0, iat=>0, exp=>time+10.5, data=>'Hello'}, alg=>$alg);
+    $decoded = eval { decode_jwt(key=>$k, token=>$token, verify_iat=>1) };
+    is($decoded->{data}, 'Hello', "decoded - NumericDate zero/fraction: alg=>'$alg'");
+
+    for my $claim (qw(exp nbf iat)) {
+      $token = encode_jwt(key=>$k, payload=>{$claim=>'not-a-number', data=>'Hello'}, alg=>$alg);
+      my %verify = $claim eq 'iat' ? (verify_iat=>1) : ();
+      $decoded = eval { decode_jwt(key=>$k, token=>$token, %verify) };
+      is($decoded, undef, "decoded - invalid NumericDate/$claim: alg=>'$alg'");
+    }
+
     $token = encode_jwt(key=>$k, payload=>{nbf=>time+10, iat=>time+10, exp=>time-10, data=>'Hello'}, alg=>$alg);
     $decoded = eval { decode_jwt(key=>$k, token=>$token) };
     is($decoded, undef, "ignore_claims/1: alg=>'$alg'");

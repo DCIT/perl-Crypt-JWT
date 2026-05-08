@@ -311,6 +311,13 @@ sub _verify_header {
 
 }
 
+sub _check_numeric_date {
+  my ($payload, $claim) = @_;
+  my $value = $payload->{$claim};
+  croak "JWT: $claim claim must be a NumericDate"
+    if !defined($value) || ref($value) || "$value" !~ /\A(?:0|[1-9][0-9]*)(?:\.[0-9]+)?\z/;
+}
+
 sub _verify_claims {
   my ($payload, %args) = @_;
 
@@ -333,6 +340,7 @@ sub _verify_claims {
   ### exp
   if(defined $payload->{exp}) {
     if (!defined $args{verify_exp} || $args{verify_exp}==1) {
+      _check_numeric_date($payload, 'exp');
       croak "JWT: exp claim check failed ($payload->{exp}/$leeway vs. $now)" if $payload->{exp} + $leeway <= $now;
     }
   }
@@ -343,6 +351,7 @@ sub _verify_claims {
   ### nbf
   if(defined $payload->{nbf}) {
     if (!defined $args{verify_nbf} || $args{verify_nbf}==1) {
+      _check_numeric_date($payload, 'nbf');
       croak "JWT: nbf claim check failed ($payload->{nbf}/$leeway vs. $now)" if $payload->{nbf} - $leeway > $now;
     }
   }
@@ -354,6 +363,7 @@ sub _verify_claims {
   if (exists $args{verify_iat}) { #default (non existing verify_iat) == no iat check
     if(defined $payload->{iat}) {
       if (!defined $args{verify_iat} || $args{verify_iat}==1) {
+        _check_numeric_date($payload, 'iat');
         croak "JWT: iat claim check failed ($payload->{iat}/$leeway vs. $now)" if $payload->{iat} - $leeway > $now;
       }
     }
