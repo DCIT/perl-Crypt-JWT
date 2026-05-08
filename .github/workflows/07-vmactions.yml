@@ -1,0 +1,190 @@
+name: 07-vmactions
+
+#### https://github.com/vmactions
+# https://github.com/vmactions/freebsd-vm
+# https://github.com/vmactions/haiku-vm
+# https://github.com/vmactions/netbsd-vm
+# https://github.com/vmactions/openbsd-vm
+# https://github.com/vmactions/solaris-vm
+
+#### https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations
+
+on:
+  push:
+    branches:
+      - '*'
+    tags-ignore:
+      - '*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  freebsd:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        hwarch:
+          - "arm64"
+          - "x86_64"
+        relver:
+          - "15.0"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Start VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "${{matrix.relver}}"
+          arch: "${{matrix.hwarch}}"
+          usesh: true
+          sync: scp
+          copyback: false
+      - name: Info
+        shell: freebsd {0}
+        run: |
+          set -eu
+          uname -a
+          whoami
+          sysctl hw.model
+          sysctl hw.ncpu
+          sysctl hw.physmem
+          sysctl hw.usermem
+          pwd
+          ls -lah
+          cc -v || true
+          gcc -v || true
+      - name: Prereqs
+        shell: freebsd {0}
+        run: |
+          set -eu
+          pkg update
+          pkg install -y curl perl5 p5-App-cpanminus p5-Math-BigInt
+          curl -L https://cpanmin.us/ -o cpanm
+          chmod +x cpanm
+          ./cpanm -n --installdeps .
+          perl -V
+      - name: Build
+        shell: freebsd {0}
+        run: |
+          set -eu
+          env AUTHOR_MODE=0 perl Makefile.PL
+          make -j2
+      - name: Test
+        shell: freebsd {0}
+        run: |
+          set -eu
+          env AUTHOR_MODE=0 prove -j2 -b t
+
+  netbsd:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        hwarch:
+          - "arm64"
+          - "x86_64"
+        relver:
+          - 10.1
+    steps:
+      - uses: actions/checkout@v6
+      - name: Start VM
+        uses: vmactions/netbsd-vm@v1
+        with:
+          release: "${{matrix.relver}}"
+          arch: "${{matrix.hwarch}}"
+          usesh: true
+          sync: scp
+          copyback: false
+      - name: Info
+        shell: netbsd {0}
+        run: |
+          set -eu
+          uname -a
+          whoami
+          sysctl hw.model
+          sysctl hw.ncpu
+          sysctl hw.physmem
+          sysctl hw.usermem
+          pwd
+          ls -lah
+          cc -v || true
+      - name: Prereqs
+        shell: netbsd {0}
+        run: |
+          set -eu
+          pkg_add curl perl p5-App-cpanminus p5-Math-BigInt
+          curl -L https://cpanmin.us/ -o cpanm
+          chmod +x cpanm
+          ./cpanm -n --installdeps .
+          perl -V
+      - name: Build
+        shell: netbsd {0}
+        run: |
+          set -eu
+          env AUTHOR_MODE=0 perl Makefile.PL
+          make -j2
+      - name: Test
+        shell: netbsd {0}
+        run: |
+          set -eu
+          env AUTHOR_MODE=0 prove -j2 -b t
+
+  openbsd:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        hwarch:
+          - "arm64"
+          - "x86_64"
+        relver:
+          - 7.8
+    steps:
+      - uses: actions/checkout@v6
+      - name: Start VM
+        uses: vmactions/openbsd-vm@v1
+        with:
+          release: "${{matrix.relver}}"
+          arch: "${{matrix.hwarch}}"
+          usesh: true
+          sync: scp
+          copyback: false
+      - name: Info
+        shell: openbsd {0}
+        run: |
+          set -eu
+          uname -a
+          whoami
+          sysctl hw.model
+          sysctl hw.ncpu
+          sysctl hw.physmem
+          sysctl hw.usermem
+          pwd
+          ls -lah
+          cc -v || true
+      - name: Prereqs
+        shell: openbsd {0}
+        run: |
+          set -eu
+          ## default = https://cdn.openbsd.org/pub/OpenBSD
+          echo "https://ftp.eu.openbsd.org/pub/OpenBSD" > /etc/installurl
+          pkg_add -u
+          pkg_add curl
+          curl -L https://cpanmin.us/ -o cpanm
+          chmod +x cpanm
+          ./cpanm -n --installdeps .
+          perl -V
+      - name: Build
+        shell: openbsd {0}
+        run: |
+          set -eu
+          env AUTHOR_MODE=0 perl Makefile.PL
+          make -j2
+      - name: Test
+        shell: openbsd {0}
+        run: |
+          set -eu
+          env AUTHOR_MODE=0 prove -j2 -b t
