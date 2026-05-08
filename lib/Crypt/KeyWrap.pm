@@ -16,6 +16,7 @@ use Crypt::AuthEnc::GCM qw(gcm_encrypt_authenticate gcm_decrypt_verify);
 use Crypt::PRNG qw(random_bytes);
 use Crypt::KeyDerivation qw(pbkdf2);
 use Crypt::Digest qw(digest_data);
+use Crypt::Misc qw(decode_b64u encode_b64u);
 use Config;
 
 # JWS: https://tools.ietf.org/html/rfc7515
@@ -42,6 +43,15 @@ sub _N2RAW {
     return pack("N", $n >> 32) . pack("N", $n & 0xFFFFFFFF);
   }
   return pack("N", $n & 0xFFFFFFFF) if $bytes == 4;
+}
+
+sub _decode_ecdh_info {
+  my ($name, $value) = @_;
+  return '' unless defined $value;
+  croak "concat_kdf: invalid $name" if ref $value;
+  my $decoded = decode_b64u($value);
+  croak "concat_kdf: invalid $name" unless defined $decoded && encode_b64u($decoded) eq $value;
+  return $decoded;
 }
 
 sub aes_key_wrap {
@@ -254,8 +264,8 @@ sub rsa_key_unwrap {
 
 sub _concat_kdf {
   my ($hash_name, $key_size, $shared_secret, $algorithm, $apu, $apv) = @_;
-  $apu = '' unless defined $apu;
-  $apv = '' unless defined $apv;
+  $apu = _decode_ecdh_info('apu', $apu);
+  $apv = _decode_ecdh_info('apv', $apv);
   my $hsize = Crypt::Digest->hashsize($hash_name);
   my $count = int($key_size / $hsize);
   $count++ if ($key_size % $hsize) > 0;
@@ -587,8 +597,8 @@ ECDH+AESKW key agreement/wrap algorithm as defined in L<https://tools.ietf.org/h
    #  $cek     .. content encryption key
    #  $alg     .. algorithm name e.g. 'ECDH-ES+A256KW' (see rfc7518)
    # optional params:
-   #  $apu     .. Agreement PartyUInfo Header Parameter
-   #  $apv     .. Agreement PartyVInfo Header Parameter
+   #  $apu     .. base64url-encoded Agreement PartyUInfo Header Parameter
+   #  $apv     .. base64url-encoded Agreement PartyVInfo Header Parameter
 
 Values C<$enc_cek> and C<$cek> are binary octets.
 
@@ -605,8 +615,8 @@ ECDH+AESKW key agreement/unwrap algorithm as defined in L<https://tools.ietf.org
    #  $alg     .. algorithm name e.g. 'ECDH-ES+A256KW' (see rfc7518)
    #  $epk     .. ephemeral ECC public key (JWK/JSON or Crypt::PK::ECC|X25519)
    # optional params:
-   #  $apu     .. Agreement PartyUInfo Header Parameter
-   #  $apv     .. Agreement PartyVInfo Header Parameter
+   #  $apu     .. base64url-encoded Agreement PartyUInfo Header Parameter
+   #  $apv     .. base64url-encoded Agreement PartyVInfo Header Parameter
 
 Values C<$enc_cek> and C<$cek> are binary octets.
 
@@ -621,8 +631,8 @@ ECDH (Ephemeral Static) key agreement/wrap algorithm as defined in L<https://too
    #  $kek     .. ECC public key - Crypt::PK::ECC|X25519 instance
    #  $enc     .. encryption algorithm name e.g. 'A256GCM' (see rfc7518)
    # optional params:
-   #  $apu     .. Agreement PartyUInfo Header Parameter
-   #  $apv     .. Agreement PartyVInfo Header Parameter
+   #  $apu     .. base64url-encoded Agreement PartyUInfo Header Parameter
+   #  $apv     .. base64url-encoded Agreement PartyVInfo Header Parameter
 
 C<$cek> is binary octets; C<$epk> is a JWK/JSON string with the ephemeral ECC public key.
 
@@ -638,8 +648,8 @@ ECDH (Ephemeral Static) key agreement/unwrap algorithm as defined in L<https://t
    #  $enc     .. encryption algorithm name e.g. 'A256GCM' (see rfc7518)
    #  $epk     .. ephemeral ECC public key (JWK/JSON or Crypt::PK::ECC|X25519)
    # optional params:
-   #  $apu     .. Agreement PartyUInfo Header Parameter
-   #  $apv     .. Agreement PartyVInfo Header Parameter
+   #  $apu     .. base64url-encoded Agreement PartyUInfo Header Parameter
+   #  $apv     .. base64url-encoded Agreement PartyVInfo Header Parameter
 
 Value C<$cek> - binary octets.
 

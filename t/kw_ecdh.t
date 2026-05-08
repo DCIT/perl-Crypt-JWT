@@ -8,6 +8,29 @@ use Crypt::Misc qw(decode_b64u);
 my $kek_private=Crypt::PK::ECC->new(\'{"kty":"EC","crv":"P-256","x":"BHId3zoDv6pDgOUh8rKdloUZ0YumRTcaVDCppUPoYgk","y":"g3QIDhaWEksYtZ9OWjNHn9a6-i_P9o5_NrdISP0VWDU","d":"KpTnMOHEpskXvuXHFCfiRtGUHUZ9Dq5CCcZQ-19rYs4"}');
 
 {
+  # RFC 7518 Appendix C: apu/apv are base64url-encoded header values
+  # ("Alice" => QWxpY2U, "Bob" => Qm9i) and must be decoded before KDF input.
+  my $bob_private = Crypt::PK::ECC->new(\'{"kty":"EC","crv":"P-256","x":"weNJy2HscCSM6AEDTDg04biOvhFhyyWvOHQfeF_PxMQ","y":"e8lnCO-AlStT-NJVX-crhB7QRYhiix03illJOVAOyck","d":"VEmDZpDXXK8p8N0Cndsxs924q6nS1RXFASRl6BfUqdw"}');
+  my $header = {
+    alg => "ECDH-ES",
+    enc => "A128GCM",
+    apu => "QWxpY2U",
+    apv => "Qm9i",
+    epk => {
+      kty => "EC",
+      crv => "P-256",
+      x   => "gI0GAILBdu7T53akrFmMyGcsF3n5dO7MmwNBHKW5SV0",
+      y   => "SLW_xSffzlPWrHEVI30DHM_4egVwt3NQqeUD7nMFpps",
+    },
+  };
+  my $unw = ecdh_key_unwrap($bob_private, $header->{enc}, $header->{epk}, $header->{apu}, $header->{apv});
+  is(unpack("H*", $unw), "56aa8deaf8236d205c2228cd71a7101a", "RFC 7518 Appendix C ECDH-ES apu/apv");
+
+  $unw = eval { ecdh_key_unwrap($bob_private, $header->{enc}, $header->{epk}, "Alice", "Bob") };
+  is($unw, undef, "ECDH-ES rejects non-base64url apu/apv");
+}
+
+{
   my $header={
     alg => "ECDH-ES",
     enc => "A128CBC-HS256",

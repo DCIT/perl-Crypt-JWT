@@ -9,6 +9,7 @@ Changes for Crypt-JWT distribution
             new $MIN_HMAC_KEY_LEN (4) and $MIN_RSA_BITS (2048);
             new section SECURITY CONSIDERATIONS in POD
         - fix: ConcatKDF: INTEROP BREAK with <=0.037 for ECDH-ES + A192CBC-HS384 / A256CBC-HS512 only
+        - fix: ECDH-ES apu/apv header values are base64url-decoded before KDF input
         - fix: AAD bit-length encoding (only diverged at AAD >= 512 MB)
         - fix: accepted_alg / accepted_enc now croak on unsupported types
         - aes_key_wrap/unwrap:
