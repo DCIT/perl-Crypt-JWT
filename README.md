@@ -80,6 +80,8 @@ Named arguments:
     secret (the so-called "alg confusion" attack).
     - For defense in depth, **always** pin the algorithm with `accepted_alg`.
 
+    Overview of supported keys:
+
         JWS alg header      key value
         ------------------  ----------------------------------
         none                no key required
