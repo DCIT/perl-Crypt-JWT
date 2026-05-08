@@ -1091,7 +1091,6 @@ For defense in depth, B<always> pin the algorithm with C<accepted_alg>.
 
 Overview of supported keys:
 
-
  JWS alg header      key value
  ------------------  ----------------------------------
  none                no key required
