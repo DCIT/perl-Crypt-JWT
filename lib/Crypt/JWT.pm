@@ -1032,7 +1032,7 @@ Or all of them at once:
 
 =head2 decode_jwt
 
- my $data              = decode_jwt(%named_args);                # default
+ my $data              = decode_jwt(%named_args);
  my ($header, $data)   = decode_jwt(%named_args, decode_header=>1);
 
 Returns the decoded payload (in scalar context) or the decoded header
@@ -1304,9 +1304,11 @@ C<Regexp> - the C<alg> value must match this regexp
 
 =back
 
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>'HS256');
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>['HS256','HS384']);
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>qr/^HS(256|384|512)$/);
+Example:
+
+  my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>'HS256');
+  my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>['HS256','HS384']);
+  my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>qr/^HS(256|384|512)$/);
 
 B<INCOMPATIBLE CHANGE Since: 0.038> Any other argument type (HASH ref,
 CODE ref, GLOB ref, etc.) now croaks at decode time; previously such typos
@@ -1338,9 +1340,11 @@ C<Regexp> - the C<enc> value must match this regexp
 
 =back
 
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>'A192GCM');
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>['A192GCM','A256GCM']);
- my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>qr/^A(128|192|256)GCM$/);
+Example:
+
+  my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>'A192GCM');
+  my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>['A192GCM','A256GCM']);
+  my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>qr/^A(128|192|256)GCM$/);
 
 =item decode_payload
 
@@ -1695,8 +1699,6 @@ NOTE: claims are part of the payload and can be used only if the payload is a HA
 =back
 
 =head1 SECURITY CONSIDERATIONS
-
-B<Since: 0.038>
 
 =head2 Configuration knobs
 

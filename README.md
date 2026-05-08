@@ -40,7 +40,7 @@ Or all of them at once:
 
 ## decode\_jwt
 
-    my $data              = decode_jwt(%named_args);                # default
+    my $data              = decode_jwt(%named_args);
     my ($header, $data)   = decode_jwt(%named_args, decode_header=>1);
 
 Returns the decoded payload (in scalar context) or the decoded header
@@ -295,6 +295,8 @@ Named arguments:
     - ARRAY ref - list of accepted `alg` names
     - `Regexp` - the `alg` value must match this regexp
 
+    Example:
+
         my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>'HS256');
         my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>['HS256','HS384']);
         my $payload = decode_jwt(token=>$t, key=>$k, accepted_alg=>qr/^HS(256|384|512)$/);
@@ -313,6 +315,8 @@ Named arguments:
     - Scalar string - the single accepted `enc` name
     - ARRAY ref - list of accepted `enc` names
     - `Regexp` - the `enc` value must match this regexp
+
+    Example:
 
         my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>'A192GCM');
         my $payload = decode_jwt(token=>$t, key=>$k, accepted_enc=>['A192GCM','A256GCM']);
@@ -665,8 +669,6 @@ Named arguments:
     NOTE: claims are part of the payload and can be used only if the payload is a HASH ref!
 
 # SECURITY CONSIDERATIONS
-
-**Since: 0.038**
 
 ## Configuration knobs
 
