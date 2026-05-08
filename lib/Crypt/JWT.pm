@@ -1704,7 +1704,7 @@ NOTE: claims are part of the payload and can be used only if the payload is a HA
 
 The library exposes four tunable package variables. Set them once at
 program startup (typically in a C<BEGIN> block) before any
-C<encode_jwt>/C<decode_jwt> call. All four were added in B<0.038>.
+C<encode_jwt>/C<decode_jwt> call.
 
 =over
 
@@ -1758,13 +1758,7 @@ leaving the policy decision in the deployer's hands.
 Cryptographically, HMAC security is bounded by the entropy of the key:
 16 random bytes (128 bits) is the smallest size that gives a comfortable
 security margin against brute-force key recovery; below that you start
-losing real security. B<Deployers SHOULD raise this:> set
-C<$Crypt::JWT::MIN_HMAC_KEY_LEN = 16> for a sane minimum, or 32 / 48 / 64
-to match the per-alg RFC strict requirement. Note that B<low-entropy> keys
-(e.g. an English passphrase) are not safe at any length without proper key
-derivation - the minimum protects against truncation, not against weak key
-material. For password-based keying use the C<PBES2-*> JWE algorithms
-instead.
+losing real security.
 
 =item *
 

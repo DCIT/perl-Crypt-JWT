@@ -674,7 +674,7 @@ Named arguments:
 
 The library exposes four tunable package variables. Set them once at
 program startup (typically in a `BEGIN` block) before any
-`encode_jwt`/`decode_jwt` call. All four were added in **0.038**.
+`encode_jwt`/`decode_jwt` call.
 
 - `$Crypt::JWT::MAX_PBES2_ITER` (default `3_000_000`)
 
@@ -720,13 +720,7 @@ or verify with a shorter key are rejected with a croak.
     Cryptographically, HMAC security is bounded by the entropy of the key:
     16 random bytes (128 bits) is the smallest size that gives a comfortable
     security margin against brute-force key recovery; below that you start
-    losing real security. **Deployers SHOULD raise this:** set
-    `$Crypt::JWT::MIN_HMAC_KEY_LEN = 16` for a sane minimum, or 32 / 48 / 64
-    to match the per-alg RFC strict requirement. Note that **low-entropy** keys
-    (e.g. an English passphrase) are not safe at any length without proper key
-    derivation - the minimum protects against truncation, not against weak key
-    material. For password-based keying use the `PBES2-*` JWE algorithms
-    instead.
+    losing real security.
 
 - **RSA modulus size:** minimum **2048 bits** (overridable via
 `$Crypt::JWT::MIN_RSA_BITS`). Applies to RS256/384/512, PS256/384/512,
