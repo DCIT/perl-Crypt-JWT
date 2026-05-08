@@ -365,7 +365,7 @@ Crypt::KeyWrap - Key management/wrapping algorithms defined in RFC7518 (JWA)
    use Crypt::KeyWrap qw(aes_key_unwrap);
    my $kek     = pack("H*", "5840df6e29b02af1ab493b705bf16ea1ae8338f4dcc176a8");
    my $enc_cek = pack("H*", "138bdeaa9b8fa7fc61f97742e72248ee5ae6ae5360d1ae6a5f54f373fa543b6a");
-   my $cek     = aes_key_unwrap($kek, $pt_data);
+   my $cek     = aes_key_unwrap($kek, $enc_cek);
 
 =head1 DESCRIPTION
 
@@ -413,51 +413,61 @@ Or all of them at once:
 
 =head2 aes_key_wrap
 
-AES key wrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.4>
-(implements algorithms C<A128KW>, C<A192KW>, C<A256KW>).
-
-Implementation follows L<https://tools.ietf.org/html/rfc5649> and L<https://tools.ietf.org/html/rfc3394>.
-
-The implementation is also compatible with L<http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38F.pdf>
-(it supports AES based KW, KWP + TDEA/DES_EDE based TKW).
-
-AES Key Wrap algorithm.
+AES Key Wrap. Implements C<A128KW>, C<A192KW>, C<A256KW> from RFC 7518
+section 4.4 (L<https://tools.ietf.org/html/rfc7518#section-4.4>) and the
+underlying RFC 3394 (L<https://tools.ietf.org/html/rfc3394>) and RFC 5649
+(L<https://tools.ietf.org/html/rfc5649>) constructions. Also compatible
+with NIST SP 800-38F (KW, KWP, and TDEA/DES_EDE-based TKW).
 
    $enc_cek = aes_key_wrap($kek, $cek);
    # or
    $enc_cek = aes_key_wrap($kek, $cek, $cipher, $padding, $inverse);
 
    # params:
-   #  $kek     .. key encryption key (16bytes for AES128, 24 for AES192, 32 for AES256)
+   #  $kek     .. key encryption key (16 bytes for AES128, 24 for AES192, 32 for AES256)
    #  $cek     .. content encryption key
    # optional params:
    #  $cipher  .. 'AES' (default) or 'DES_EDE'
-   #  $padding .. 1 (default) or 0 handle $cek padding (relevant for AES only)
-   #  $inverse .. 0 (default) or 1 use cipher in inverse mode as defined by SP.800-38F
+   #  $padding .. 1 (default) -> KWP (RFC 5649): always uses the alternate
+   #              IV (A65959A6 || msg-len) and pads $cek to a multiple of 8
+   #              (relevant for AES only)
+   #              0 -> KW (RFC 3394): uses the standard all-A6 IV; $cek must
+   #              already be a multiple of 8 (AES) or 4 (DES_EDE)
+   #  $inverse .. 0 (default) or 1 - use cipher in inverse mode as defined by SP 800-38F
 
-Values C<$enc_cek>, C<$cek> and C<$kek> are binary octets. If you disable padding you have to make sure that
-C<$cek> length is multiply of 8 (for AES) or multiply of 4 (for DES_EDE);
+C<$enc_cek>, C<$cek>, and C<$kek> are binary octets.
+
+B<Since: 0.038> KW (C<$padding=0>) and KWP (C<$padding=1>) are strictly
+separated; KWP always emits the alternate IV even for already-aligned
+input. JWE callers (A*KW, PBES2-*+A*KW, ECDH-ES+A*KW) all use C<$padding=0>
+per RFC 7518.
 
 =head2 aes_key_unwrap
 
-AES key unwrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.4>
-(implements algorithms C<A128KW>, C<A192KW>, C<A256KW>).
-
-AES Key Unwrap algorithm.
+AES Key Unwrap. Inverse of L</aes_key_wrap>; implements C<A128KW>,
+C<A192KW>, C<A256KW> from RFC 7518 section 4.4
+(L<https://tools.ietf.org/html/rfc7518#section-4.4>).
 
    $cek = aes_key_unwrap($kek, $enc_cek);
    # or
    $cek = aes_key_unwrap($kek, $enc_cek, $cipher, $padding, $inverse);
 
    # params:
-   #  $kek     .. key encryption key (16bytes for AES128, 24 for AES192, 32 for AES256)
+   #  $kek     .. key encryption key (16 bytes for AES128, 24 for AES192, 32 for AES256)
    #  $enc_cek .. encrypted content encryption key
    # optional params:
    #  $cipher  .. 'AES' (default) or 'DES_EDE'
-   #  $padding .. 1 (default) or 0 - use $cek padding (relevant for AES only)
-   #  $inverse .. 0 (default) or 1 - use cipher in inverse mode as defined by SP.800-38F
+   #  $padding .. 1 (default) -> KWP (RFC 5649): expects the alternate IV
+   #              (A65959A6 || msg-len) and strips zero padding
+   #              (relevant for AES only)
+   #              0 -> KW (RFC 3394): expects the standard all-A6 IV
+   #  $inverse .. 0 (default) or 1 - use cipher in inverse mode as defined by SP 800-38F
 
-Values C<$enc_cek>, C<$cek> and C<$kek> are binary octets.
+C<$enc_cek>, C<$cek>, and C<$kek> are binary octets.
+
+B<Since: 0.038> The two modes are strict and reject the other mode's IV
+form. Croaks with C<aes_key_unwrap: ct too short> or C<ct length not a
+multiple of $blck> on malformed input lengths.
 
 =head2 gcm_key_wrap
 
@@ -474,8 +484,8 @@ AES GCM key wrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#s
    #  $kek     .. key encryption key (16bytes for AES128, 24 for AES192, 32 for AES256)
    #  $cek     .. content encryption key
    # optional params:
-   #  $aad     .. additional authenticated data, DEFAULT is '' (empty string)
-   #  $cipher  .. cipher to be used by GCM, DEFAULT is 'AES'
+   #  $aad     .. additional authenticated data, default: '' (empty string)
+   #  $cipher  .. cipher to be used by GCM, default: 'AES'
    #  $iv      .. initialization vector (if not defined a random IV is generated)
 
 Values C<$enc_cek>, C<$cek>, C<$aad>, C<$iv>, C<$tag> and C<$kek> are binary octets.
@@ -497,8 +507,8 @@ AES GCM key unwrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518
    #  $tag     .. GCM's tag
    #  $iv      .. initialization vector
    # optional params:
-   #  $aad     .. additional authenticated data, DEFAULT is '' (empty string)
-   #  $cipher  .. cipher to be used by GCM, DEFAULT is 'AES'
+   #  $aad     .. additional authenticated data, default: '' (empty string)
+   #  $cipher  .. cipher to be used by GCM, default: 'AES'
 
 Values C<$enc_cek>, C<$cek>, C<$aad>, C<$iv>, C<$tag> and C<$kek> are binary octets.
 
@@ -520,8 +530,9 @@ Values C<$enc_cek>, C<$cek>, C<$salt> and C<$kek> are binary octets.
 
 =head2 pbes2_key_unwrap
 
-PBES2 key unwrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.8>
-(implements algorithms C<PBES2-HS256+A128KW>, C<PBES2-HS384+A192KW>, C<PBES2-HS512+A256KW>).
+PBES2 key unwrap algorithm. Inverse of L</pbes2_key_wrap>; implements
+C<PBES2-HS256+A128KW>, C<PBES2-HS384+A192KW>, C<PBES2-HS512+A256KW> from
+RFC 7518 section 4.8 (L<https://tools.ietf.org/html/rfc7518#section-4.8>).
 
    $cek = pbes2_key_unwrap($kek, $enc_cek, $alg, $salt, $iter);
 
@@ -536,8 +547,10 @@ Values C<$enc_cek>, C<$cek>, C<$salt> and C<$kek> are binary octets.
 
 =head2 rsa_key_wrap
 
-PBES2 key wrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.2> and
-L<https://tools.ietf.org/html/rfc7518#section-4.3> (implements algorithms C<RSA1_5>, C<RSA-OAEP-256>, C<RSA-OAEP>).
+RSA key wrap algorithm. Implements C<RSA1_5>, C<RSA-OAEP>, and
+C<RSA-OAEP-256> from RFC 7518 sections 4.2 and 4.3
+(L<https://tools.ietf.org/html/rfc7518#section-4.2>,
+L<https://tools.ietf.org/html/rfc7518#section-4.3>).
 
    $enc_cek = rsa_key_wrap($kek, $cek, $alg);
 
@@ -550,8 +563,8 @@ Values C<$enc_cek> and C<$cek> are binary octets.
 
 =head2 rsa_key_unwrap
 
-PBES2 key wrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.2> and
-L<https://tools.ietf.org/html/rfc7518#section-4.3> (implements algorithms C<RSA1_5>, C<RSA-OAEP-256>, C<RSA-OAEP>).
+RSA key unwrap algorithm. Inverse of L</rsa_key_wrap>; implements
+C<RSA1_5>, C<RSA-OAEP>, and C<RSA-OAEP-256> from RFC 7518 sections 4.2 and 4.3.
 
    $cek = rsa_key_unwrap($kek, $enc_cek, $alg);
 
@@ -599,7 +612,7 @@ Values C<$enc_cek> and C<$cek> are binary octets.
 
 =head2 ecdh_key_wrap
 
-ECDH (Ephememeral Static) key agreement/wrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.6>
+ECDH (Ephemeral Static) key agreement/wrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.6>
 (implements algorithm C<ECDH-ES>).
 
    ($cek, $epk) = ecdh_key_wrap($kek, $enc, $apu, $apv);
@@ -611,11 +624,11 @@ ECDH (Ephememeral Static) key agreement/wrap algorithm as defined in L<https://t
    #  $apu     .. Agreement PartyUInfo Header Parameter
    #  $apv     .. Agreement PartyVInfo Header Parameter
 
-Value C<$cek> - binary octets, C<$epk> JWK/JSON string with ephemeral ECC public key.
+C<$cek> is binary octets; C<$epk> is a JWK/JSON string with the ephemeral ECC public key.
 
 =head2 ecdh_key_unwrap
 
-ECDH (Ephememeral Static) key agreement/unwrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.6>
+ECDH (Ephemeral Static) key agreement/unwrap algorithm as defined in L<https://tools.ietf.org/html/rfc7518#section-4.6>
 (implements algorithm C<ECDH-ES>).
 
    $cek = ecdh_key_unwrap($kek, $enc, $epk, $apu, $apv);

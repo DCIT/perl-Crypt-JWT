@@ -1012,9 +1012,9 @@ Implements B<JSON Web Token (JWT)> - L<https://tools.ietf.org/html/rfc7519>.
 The implementation covers not only B<JSON Web Signature (JWS)> - L<https://tools.ietf.org/html/rfc7515>,
 but also B<JSON Web Encryption (JWE)> - L<https://tools.ietf.org/html/rfc7516>.
 
-The module implements B<all (100%) algorithms> defined in L<https://tools.ietf.org/html/rfc7518> - B<JSON Web Algorithms (JWA)>.
+The module implements all algorithms defined in L<https://tools.ietf.org/html/rfc7518> - B<JSON Web Algorithms (JWA)>.
 
-This module supports B<Compact JWS/JWE> and B<Flattened JWS/JWE JSON> serialization, general JSON serialization is not supported yet.
+This module supports B<Compact JWS/JWE> and B<Flattened JWS/JWE JSON> serialization. General (multi-recipient) JSON serialization is not supported.
 
 =head1 EXPORT
 
@@ -1045,13 +1045,15 @@ Named arguments:
 
 =item token
 
-Mandatory argument, a string with either JWS or JWE JSON Web Token.
+Mandatory. The serialized JWS or JWE token as a string. Both compact
+(C<.>-separated, 3 segments for JWS / 5 for JWE) and flattened JSON
+serialization are accepted.
 
- ### JWS token example (3 segments)
+ ### JWS compact (3 segments)
  $t = "eyJhbGciOiJIUzI1NiJ9.dGVzdA.ujBihtLSr66CEWqN74SpLUkv28lra_CeHnxLmLNp4Jo";
  my $data = decode_jwt(token=>$t, key=>$k);
 
- ### JWE token example (5 segments)
+ ### JWE compact (5 segments)
  $t = "eyJlbmMiOiJBMTI4R0NNIiwiYWxnIjoiQTEyOEtXIn0.UusxEbzhGkORxTRq0xkFKhvzPrXb9smw.VGfOuq0Fxt6TsdqLZUpnxw.JajIQQ.pkKZ7MHS0XjyGmRsqgom6w";
  my $data = decode_jwt(token=>$t, key=>$k);
 
@@ -1060,14 +1062,32 @@ Mandatory argument, a string with either JWS or JWE JSON Web Token.
 A key used for token decryption (JWE) or token signature validation (JWS).
 The value depends on the C<alg> token header value.
 
-B<Since: 0.038> B<SECURITY:> a bare scalar is always interpreted as a raw
-octet string (HMAC secret, AES key, etc.). PEM, DER, and JWK-JSON key
-material B<must> be passed as a SCALAR ref (C<\$pem>) or as an appropriate
-key object - never as a bare string. If a public-key string is mistakenly passed as a bare
-scalar and C<accepted_alg> is not set, an attacker who flips the token's
-C<alg> to C<HS*> can forge a signature using the public-key bytes as the
-HMAC secret (the so-called "alg confusion" attack). For defense in depth,
-also restrict the algorithm with C<accepted_alg>.
+B<Since: 0.038> B<SECURITY:> how the C<key> argument is shaped matters.
+
+=over
+
+=item *
+
+A bare scalar (e.g. C<'secret'>) is always interpreted as a raw octet
+string (HMAC secret, AES key, etc.).
+
+=item *
+
+PEM, DER, and JWK-JSON key material B<must> be passed as a SCALAR ref
+(C<\$pem>) or as an appropriate key object - never as a bare string.
+
+=item *
+
+If a public-key string is mistakenly passed as a bare scalar and
+C<accepted_alg> is not set, an attacker who flips the token's C<alg> to
+C<HS*> can forge a signature using the public-key bytes as the HMAC
+secret (the so-called "alg confusion" attack).
+
+=item *
+
+For defense in depth, B<always> pin the algorithm with C<accepted_alg>.
+
+=back
 
  JWS alg header      key value
  ------------------  ----------------------------------
@@ -1209,7 +1229,8 @@ Examples with ECC keys:
 
 =item keypass
 
-When 'key' parameter is an encrypted private RSA or ECC key this optional parameter may contain a password for private key decryption.
+Optional. When the C<key> parameter is an encrypted private RSA or ECC
+key (PEM/DER), this parameter holds the password used to decrypt it.
 
 =item kid_keys
 
@@ -1257,7 +1278,7 @@ if the C<kid> was not found in C<kid_keys>.
 
 B<Since: 0.023>
 
-C<1> - use C<jwk> header value for validating JWS signature if neither C<key> nor C<kid_keys> specified, B<BEWARE: DANGEROUS, INSECURE!!!>
+C<1> - use C<jwk> header value for validating JWS signature if neither C<key> nor C<kid_keys> specified, B<BEWARE: DANGEROUS, INSECURE.>
 
 C<0> (default) - ignore C<jwk> header value when validating JWS signature
 
@@ -1265,13 +1286,13 @@ Keep in mind that enabling C<key_from_jwk_header> requires the C<jwk> header to 
 
 =item allow_none
 
-C<1> - accept JWS tokens with C<none> 'alg' header value (which means that token has no signature), B<BEWARE: DANGEROUS, INSECURE!!!>
+C<1> - accept JWS tokens with C<none> 'alg' header value (which means that token has no signature), B<BEWARE: DANGEROUS, INSECURE.>
 
 C<0> (default) - do not allow JWS with C<none> 'alg' header value
 
 =item ignore_signature
 
-C<1> - do not check signature on JWS tokens, B<BEWARE: DANGEROUS, INSECURE!!!>
+C<1> - do not check signature on JWS tokens, B<BEWARE: DANGEROUS, INSECURE.>
 
 C<0> (default) - check signature on JWS tokens
 
@@ -1356,12 +1377,13 @@ C<undef> (default) - if possible decode payload from JSON string, if decode_json
 
 =item decode_header
 
-C<0> (default) - do not return decoded header as a return value of decode_jwt()
+C<0> (default) - C<decode_jwt> returns just the decoded payload (scalar
+context).
 
-C<1> - return decoded header as a return value of decode_jwt()
+C<1> - C<decode_jwt> returns C<($header, $payload)>; useful when you need
+to inspect the JWT header (e.g. C<alg>, C<kid>, C<typ>).
 
- my $payload = decode_jwt(token=>$t, key=>$k);
- #or
+ my $payload            = decode_jwt(token=>$t, key=>$k);
  my ($header, $payload) = decode_jwt(token=>$t, key=>$k, decode_header=>1);
 
 =item verify_iss
@@ -1463,7 +1485,7 @@ Tolerance in seconds related to C<verify_exp>, C<verify_nbf> and C<verify_iat>. 
 
 =item ignore_claims
 
-C<1> - do not check claims (iat, exp, nbf, iss, aud, sub, jti), B<BEWARE: DANGEROUS, INSECURE!!!>
+C<1> - do not check claims (iat, exp, nbf, iss, aud, sub, jti), B<BEWARE: DANGEROUS, INSECURE.>
 
 C<0> (default) - check claims
 
@@ -1511,15 +1533,13 @@ Named arguments:
 
 =item payload
 
-Value of this mandatory parameter can be a string/buffer or HASH ref or ARRAY ref
+Mandatory. Accepts a string (raw bytes), a HASH ref, or an ARRAY ref.
+HASH ref and ARRAY ref payloads are serialized as JSON strings; string
+payloads are passed through verbatim.
 
- my $token = encode_jwt(payload=>"any raw data", key=>$k, alg=>'HS256');
- #or
- my $token = encode_jwt(payload=>{a=>1,b=>2}, key=>$k, alg=>'HS256');
- #or
- my $token = encode_jwt(payload=>[11,22,33,44], key=>$k, alg=>'HS256');
-
-HASH ref and ARRAY ref payloads are serialized as JSON strings.
+ my $token = encode_jwt(payload=>"any raw data",  key=>$k, alg=>'HS256');
+ my $token = encode_jwt(payload=>{a=>1, b=>2},    key=>$k, alg=>'HS256');
+ my $token = encode_jwt(payload=>[11,22,33,44],   key=>$k, alg=>'HS256');
 
 =item alg
 
@@ -1628,11 +1648,12 @@ A key used for token encryption (JWE) or token signing (JWS). The value depends 
 
 =item keypass
 
-When 'key' parameter is an encrypted private RSA or ECC key this optional parameter may contain a password for private key decryption.
+Optional. When the C<key> parameter is an encrypted private RSA or ECC
+key (PEM/DER), this parameter holds the password used to decrypt it.
 
 =item allow_none
 
-C<1> - allow JWS with C<none> 'alg' header value (which means that token has no signature), B<BEWARE: DANGEROUS, INSECURE!!!>
+C<1> - allow JWS with C<none> 'alg' header value (which means that token has no signature), B<BEWARE: DANGEROUS, INSECURE.>
 
 C<0> (default) - do not allow JWS with C<none> 'alg' header value
 
@@ -1648,19 +1669,23 @@ iteration count (p2c) via C<extra_headers> like this:
 
 You can also use this to specify a C<kid> value (see L</kid_keys>):
 
- my $token = encode_jwt(payload=>$p, key=>$k, alg => 'RS256', extra_headers=>{kid=>'key1'});
+ my $token = encode_jwt(payload=>$p, key=>$k, alg=>'RS256', extra_headers=>{kid=>'key1'});
 
 =item unprotected_headers
 
-A hash with additional integrity unprotected headers - JWS and JWE (not available for C<compact> serialization);
+A HASH ref with additional integrity-unprotected headers (JWS and JWE).
+Not available for C<compact> serialization.
 
 =item shared_unprotected_headers
 
-A hash with additional integrity unprotected headers - JWE only (not available for C<compact> serialization);
+A HASH ref with additional integrity-unprotected headers (JWE only).
+Not available for C<compact> serialization.
 
 =item aad
 
-Additional Authenticated Data - scalar value with any (even raw octets) data - JWE only (not available for C<compact> serialization);
+Additional Authenticated Data: a scalar of arbitrary bytes that is
+authenticated but not encrypted (JWE only).
+Not available for C<compact> serialization.
 
 =item serialization
 
@@ -1678,23 +1703,24 @@ Compression method, currently 'deflate' is the only one supported. C<undef> (def
 
 =item auto_iat
 
-C<1> - set 'iat' (Issued At) claim to current time (epoch seconds since 1970) at the moment of token encoding
+C<1> - set the C<iat> (Issued At) claim to the current time (epoch
+seconds since 1970) at the moment of token encoding.
 
-C<0> (default) - do not set 'iat' claim
+C<0> (default) - do not set the C<iat> claim.
 
-NOTE: claims are part of the payload and can be used only if the payload is a HASH ref!
+B<NOTE:> takes effect only when the C<payload> argument is a HASH ref;
+silently ignored for string/ARRAY-ref payloads. Same applies to
+C<relative_exp> and C<relative_nbf>.
 
 =item relative_exp
 
-Set 'exp' claim (Expiration Time) to current time + C<relative_exp> value (in seconds).
-
-NOTE: claims are part of the payload and can be used only if the payload is a HASH ref!
+Set the C<exp> (Expiration Time) claim to current time + C<relative_exp>
+value (in seconds). See note under C<auto_iat> about HASH-ref payloads.
 
 =item relative_nbf
 
-Set 'nbf' claim (Not Before) to current time + C<relative_nbf> value (in seconds).
-
-NOTE: claims are part of the payload and can be used only if the payload is a HASH ref!
+Set the C<nbf> (Not Before) claim to current time + C<relative_nbf>
+value (in seconds). See note under C<auto_iat> about HASH-ref payloads.
 
 =back
 
