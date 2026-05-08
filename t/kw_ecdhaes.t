@@ -59,10 +59,13 @@ my $kek_private=Crypt::PK::ECC->new(\'{"kty":"EC","crv":"P-256","x":"BHId3zoDv6p
 }
 
 {
+  # ECDH-ES+A256KW wraps a CEK which is always aligned to the AES block
+  # boundary (RFC 7518 sec 4.4 / RFC 3394). 32-byte CEK matches A256GCM/...
   my $kek_public=Crypt::PK::ECC->new(\$kek_private->export_key_jwk('public'));
-  my ($wrp, $epk) = ecdhaes_key_wrap($kek_public, 'plaintext', "ECDH-ES+A256KW");
+  my $cek = "0123456789abcdef0123456789abcdef";   # 32 bytes
+  my ($wrp, $epk) = ecdhaes_key_wrap($kek_public, $cek, "ECDH-ES+A256KW");
   my $unw = ecdhaes_key_unwrap($kek_private, $wrp, "ECDH-ES+A256KW", $epk);
-  is($unw, 'plaintext', "wrap+unwrap ECDH-ES+A256KW");
+  is($unw, $cek, "wrap+unwrap ECDH-ES+A256KW");
 }
 
 done_testing;

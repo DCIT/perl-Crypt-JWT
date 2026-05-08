@@ -1,5 +1,23 @@
 Changes for Crypt-JWT distribution
 
+0.038   2026-05-08
+        - SECURITY:
+            constant-time MAC compare;
+            enforce JWK alg/use/key_ops and EC alg/crv consistency;
+            reject mixed-symmetry or duplicate-kid keysets;
+            cap PBES2 p2c and inflated payload size;
+            new $MIN_HMAC_KEY_LEN (4) and $MIN_RSA_BITS (2048);
+            new section SECURITY CONSIDERATIONS in POD
+        - fix: ConcatKDF: INTEROP BREAK with <=0.037 for ECDH-ES + A192CBC-HS384 / A256CBC-HS512 only
+        - fix: AAD bit-length encoding (only diverged at AAD >= 512 MB)
+        - fix: accepted_alg / accepted_enc now croak on unsupported types
+        - aes_key_wrap/unwrap:
+            strict RFC 3394 (KW) vs RFC 5649 (KWP) modes;
+            ct length validation
+            fix unwrap of aligned KWP messages
+        - require Compress::Raw::Zlib >= 2.057
+        - new author-only Wycheproof harness t/wycheproof.t (AUTHOR_MODE=1)
+
 0.037   2025-04-27
         - fix #43 Fails to decode JWT from AWS Application Load Balancers
         - fix #44 Allow decoding JWS with Base64 padding characters

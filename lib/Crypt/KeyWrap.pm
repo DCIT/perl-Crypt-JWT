@@ -3,7 +3,7 @@ package Crypt::KeyWrap;
 use strict;
 use warnings;
 
-our $VERSION = '0.037';
+our $VERSION = '0.038';
 
 use Exporter 'import';
 our %EXPORT_TAGS = ( all => [qw(aes_key_wrap aes_key_unwrap gcm_key_wrap gcm_key_unwrap pbes2_key_wrap pbes2_key_unwrap ecdh_key_wrap ecdh_key_unwrap ecdhaes_key_wrap ecdhaes_key_unwrap rsa_key_wrap rsa_key_unwrap)] );
@@ -61,12 +61,22 @@ sub aes_key_wrap {
   my $ECB = Crypt::Mode::ECB->new($cipher, 0);
   my $blck = $cipher eq 'DES_EDE' ? 4 : 8; # semiblock size in bytes, for AES 8, for 3DES 4
 
-  my $IV = pack("H*", "A6" x $blck);
+  # IV selection per RFC 3394 (KW, no padding) vs RFC 5649 (KWP, with padding).
+  # Strict semantics: KWP always uses the alternate IV (A65959A6 || msg-len),
+  # even when the message is already aligned, and KW always uses the standard
+  # all-A6 IV. This matches the strict-mode behaviour Wycheproof tests for.
   my $len = length $pt_data;
-  if ($len % $blck > 0) {
-    croak "aes_key_wrap: pt_data length not multiply of $blck" if !$padding;
-    $pt_data .= chr(0) x ($blck - ($len % $blck));
+  my $IV;
+  if ($padding) {
+    croak "aes_key_wrap: KWP only defined for AES (blck=8)" if $blck != 8;
     $IV = pack("H*", "A65959A6") . pack("N", $len);
+    if ($len % $blck > 0) {
+      $pt_data .= chr(0) x ($blck - ($len % $blck));
+    }
+  }
+  else {
+    croak "aes_key_wrap: pt_data length not multiply of $blck" if $len % $blck != 0;
+    $IV = pack("H*", "A6" x $blck);
   }
 
   my $n = length($pt_data) / $blck;
@@ -111,7 +121,13 @@ sub aes_key_unwrap {
   my $ECB = Crypt::Mode::ECB->new($cipher, 0);
   my $blck = $cipher eq 'DES_EDE' ? 4 : 8; # semiblock size in bytes, for AES 8, for 3DES 4
 
-  my $n = length($ct_data) / $blck - 1;
+  # Wrapped data must be at least IV + 1 semiblock and an exact semiblock
+  # multiple. Catches empty messages and trailing-byte tampering early.
+  my $ct_len = length $ct_data;
+  croak "aes_key_unwrap: ct too short ($ct_len bytes, need at least " . (2*$blck) . ")" if $ct_len < 2 * $blck;
+  croak "aes_key_unwrap: ct length not a multiple of $blck" if $ct_len % $blck != 0;
+
+  my $n = $ct_len / $blck - 1;
   $C->[$_] = substr($ct_data, $_*$blck, $blck) for (0..$n); # n+1 semiblocks
 
   if ($n==1) {
@@ -136,19 +152,24 @@ sub aes_key_unwrap {
   my $rv = '';
   $rv .= $R->[$_] for (0..$n-1);
 
+  # IV strictness: KW (padding=0) requires the standard all-A6 IV; KWP
+  # (padding=1) requires the alternate A65959A6||len IV. Each mode rejects
+  # the other's IV form.
   my $A_hex = unpack("H*", $A);
-  if ($A_hex eq 'a6'x$blck) {
+  if (!$padding) {
+    croak "aes_key_unwrap: unexpected IV [$A_hex] (KW expects all-A6)" unless $A_hex eq 'a6'x$blck;
     return $rv;
   }
-  elsif ($A_hex =~ /^a65959a6/ && $blck == 8) {
-    warn "key_unwrap: unexpected padding" unless $padding;
-    my $n = unpack("N", substr($A, 4, 4));
-    my $z = length($rv) - $n;
-    my $tail = unpack("H*", substr($rv, -$z));
-    croak "aes_key_unwrap: invalid data" unless $tail eq "00"x$z;
-    return substr($rv, 0, $n);
-  }
-  croak "aes_key_unwrap: unexpected data [$cipher/$A_hex]";
+  croak "aes_key_unwrap: KWP only defined for AES (blck=8)" if $blck != 8;
+  croak "aes_key_unwrap: unexpected IV [$A_hex] (KWP expects A65959A6 prefix)" unless $A_hex =~ /^a65959a6/;
+  my $msg_len = unpack("N", substr($A, 4, 4));
+  my $z = length($rv) - $msg_len;
+  # RFC 5649: 0 <= z < 8 (0 .. 7 zero pad bytes); msg_len must be at least 1.
+  croak "aes_key_unwrap: invalid length" if $msg_len < 1 || $z < 0 || $z > 7;
+  # Note: substr($rv, -0) returns the whole string, not empty; guard $z==0.
+  my $tail = $z > 0 ? unpack("H*", substr($rv, -$z)) : "";
+  croak "aes_key_unwrap: invalid data" unless $tail eq "00"x$z;
+  return substr($rv, 0, $msg_len);
 }
 
 # AES GCM KW - https://tools.ietf.org/html/rfc7518#section-4.7
@@ -177,7 +198,8 @@ sub pbes2_key_wrap {
     $hash_name = "SHA$1";
     $len = $2/8;
     my $aes_key = pbkdf2($kek, $alg."\x00".$salt, $iter, $hash_name, $len);
-    my $ct_data = aes_key_wrap($aes_key, $pt_data);
+    # RFC 7518 sec 4.8 wraps via "AES Key Wrap algorithm specified in RFC 3394"
+    my $ct_data = aes_key_wrap($aes_key, $pt_data, 'AES', 0);
     return $ct_data;
   }
   croak "pbes2_key_wrap: invalid alg '$alg'";
@@ -191,7 +213,7 @@ sub pbes2_key_unwrap {
     $hash_name = "SHA$1";
     $len = $2/8;
     my $aes_key = pbkdf2($kek, $alg."\x00".$salt, $iter, $hash_name, $len);
-    my $pt_data = aes_key_unwrap($aes_key, $ct_data);
+    my $pt_data = aes_key_unwrap($aes_key, $ct_data, 'AES', 0);
     return $pt_data;
   }
   croak "pbes2_key_unwrap: invalid alg '$alg'";
@@ -298,7 +320,8 @@ sub ecdhaes_key_wrap {
   }
   my $shared_secret = $ephemeral->shared_secret($kek_public);
   my $kek = _concat_kdf('SHA256', $encryption_key_size/8, $shared_secret, $alg, $apu, $apv);
-  return (aes_key_wrap($kek, $pt_data), $ephemeral->export_key_jwk('public'));
+  # RFC 7518 sec 4.6 wraps via "AES Key Wrap algorithm specified in RFC 3394"
+  return (aes_key_wrap($kek, $pt_data, 'AES', 0), $ephemeral->export_key_jwk('public'));
 }
 
 sub ecdhaes_key_unwrap {
@@ -318,7 +341,7 @@ sub ecdhaes_key_unwrap {
   }
   my $shared_secret = $kek_private->shared_secret($ephemeral);
   my $kek = _concat_kdf('SHA256', $encryption_key_size/8, $shared_secret, $alg, $apu, $apv);
-  my $pt_data = aes_key_unwrap($kek, $ct_data);
+  my $pt_data = aes_key_unwrap($kek, $ct_data, 'AES', 0);
   return $pt_data;
 }
 

@@ -638,22 +638,22 @@ my @tv = (
 );
 
 {
-  # https://www.ietf.org/rfc/rfc3394.txt
+  # https://www.ietf.org/rfc/rfc3394.txt - KW (no padding)
   my $kek     = pack("H*", "000102030405060708090a0b0c0d0e0f1011121314151617");
   my $keydata = pack("H*", "00112233445566778899aabbccddeeff");
-  my $wrap    = aes_key_wrap($kek, $keydata);
+  my $wrap    = aes_key_wrap($kek, $keydata, 'AES', 0);
   is(unpack("H*", $wrap), "96778b25ae6ca435f92b5b97c050aed2468ab8a17ad84e5d");
-  my $unwrap  = aes_key_unwrap($kek, $wrap);
+  my $unwrap  = aes_key_unwrap($kek, $wrap, 'AES', 0);
   is(unpack("H*", $unwrap), "00112233445566778899aabbccddeeff");
 }
 
 {
-  # https://www.ietf.org/rfc/rfc3394.txt
+  # https://www.ietf.org/rfc/rfc3394.txt - KW (no padding)
   my $kek     = pack("H*", "000102030405060708090a0b0c0d0e0f");
   my $keydata = pack("H*", "00112233445566778899aabbccddeeff");
-  my $wrap    = aes_key_wrap($kek, $keydata);
+  my $wrap    = aes_key_wrap($kek, $keydata, 'AES', 0);
   is(unpack("H*", $wrap), "1fa68b0a8112b447aef34bd8fb5a7b829d3e862371d2cfe5");
-  my $unwrap  = aes_key_unwrap($kek, $wrap);
+  my $unwrap  = aes_key_unwrap($kek, $wrap, 'AES', 0);
   is(unpack("H*", $unwrap), "00112233445566778899aabbccddeeff");
 }
 
@@ -679,12 +679,13 @@ my @tv = (
 
 {
   # https://tools.ietf.org/html/draft-ietf-jose-json-web-encryption
+  # JWE A*KW uses RFC 3394 (KW, no padding) per RFC 7518 sec 4.4
   my $keydata = join '', map { chr($_) } (4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63, 170, 106, 206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156, 44, 207);
   my $kek = decode_b64u("GawgguFyGrWKav7AX4VKUg");
   my $ct  = decode_b64u("6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ");
-  my $wrap    = aes_key_wrap($kek, $keydata);
+  my $wrap    = aes_key_wrap($kek, $keydata, 'AES', 0);
   is(unpack("H*", $wrap), unpack("H*",$ct));
-  my $unwrap  = aes_key_unwrap($kek, $wrap);
+  my $unwrap  = aes_key_unwrap($kek, $wrap, 'AES', 0);
   is(unpack("H*", $unwrap), unpack("H*",$keydata));
 }
 
