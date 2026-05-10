@@ -45,7 +45,7 @@ sub aes_cbc_hmac_sha2_encrypt {
     my $MAC_KEY = substr($K, 0, $half);
     my $ENC_KEY = substr($K, $half);
     my $E = Crypt::Mode::CBC->new('AES')->encrypt($P, $ENC_KEY, $IV);
-    my $AL = pack('Q>', 8 * length($A));
+    my $AL = pack('NN', 0, 8 * length($A));
     my $M = hmac($hash, $MAC_KEY, $A . $IV . $E . $AL);
     my $T = substr($M, 0, $tag_len);
     return ($E, $M, $T);
