@@ -1,5 +1,7 @@
 Changes for Crypt-JWT distribution
 
+        - Added auto_jti option to encode_jwt
+
 0.038   2026-05-16
         - SECURITY:
             * constant-time MAC compare;
