@@ -203,6 +203,12 @@ sub _add_claims {
   $payload->{iat} = $now                       if $args{auto_iat};
   $payload->{exp} = $now + $args{relative_exp} if defined $args{relative_exp};
   $payload->{nbf} = $now + $args{relative_nbf} if defined $args{relative_nbf};
+  if ($args{auto_jti}) {
+    my $random = Crypt::PRNG::random_bytes(16);
+    vec($random, 13, 4) = 4; # UUIDv4
+    vec($random, 35, 2) = 2; # RFC 9562 variant
+    $payload->{jti} = join '-', unpack 'H8H4H4H4H12', $random;
+  }
 }
 
 sub _check_jwk_constraints {
@@ -1733,6 +1739,10 @@ value (in seconds). See note under C<auto_iat> about HASH-ref payloads.
 
 Set the C<nbf> (Not Before) claim to current time + C<relative_nbf>
 value (in seconds). See note under C<auto_iat> about HASH-ref payloads.
+
+=item auto_jti
+
+Set the C<jti> (JWT ID) claim to a random UUIDv4.
 
 =back
 

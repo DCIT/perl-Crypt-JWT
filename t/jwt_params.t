@@ -248,6 +248,10 @@ for ([qw/PBES2-HS256+A128KW A128GCM/], ['HS512', '']) {
     is($decoded->{nbf}, $iat-13,  "relative_nbf/2: alg=>'$alg'");
     is($decoded->{exp}, $iat-4, "relative_exp/2: alg=>'$alg'");
 
+    $token = encode_jwt(key=>$k, auto_jti=>1, payload=>{data=>'Hello'}, alg=>$alg);
+    $decoded = decode_jwt(key=>$k, token=>$token);
+    like($decoded->{jti}, qr/^\w{8}-\w{4}-4\w{3}-[89ab]\w{3}-\w{12}$/, 'auto_jti');
+
     $token = encode_jwt(key=>$k, payload=>{}, alg=>$alg);
     $decoded = eval { decode_jwt(key=>$k, token=>$token, verify_iss=>sub { return 1 }) };
     is($decoded, undef, "decoded - missing_claims/1: alg=>'$alg'");
